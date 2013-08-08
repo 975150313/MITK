@@ -387,19 +387,23 @@ namespace mitk
 
       LayerSortedActorList layerSortedActors;
 
-      // Traverse the data tree to find nodes resliced by ImageMapperGL2D
-      mitk::NodePredicateOr::Pointer p = mitk::NodePredicateOr::New();
-      //use a predicate to get all data nodes which are "images" or inherit from mitk::Image
-      mitk::TNodePredicateDataType< mitk::Image >::Pointer predicateAllImages = mitk::TNodePredicateDataType< mitk::Image >::New();
-      mitk::DataStorage::SetOfObjects::ConstPointer all = m_DataStorage->GetSubset(predicateAllImages);
-      //process all found images
-      for (mitk::DataStorage::SetOfObjects::ConstIterator it = all->Begin(); it != all->End(); ++it)
+      if (m_DataStorage.IsNotNull())
       {
+        // Traverse the data tree to find nodes resliced by ImageMapperGL2D
+        mitk::NodePredicateOr::Pointer p = mitk::NodePredicateOr::New();
+        //use a predicate to get all data nodes which are "images" or inherit from mitk::Image
+        mitk::TNodePredicateDataType< mitk::Image >::Pointer predicateAllImages = mitk::TNodePredicateDataType< mitk::Image >::New();
+        mitk::DataStorage::SetOfObjects::ConstPointer all = m_DataStorage->GetSubset(predicateAllImages);
+        //process all found images
+        for (mitk::DataStorage::SetOfObjects::ConstIterator it = all->Begin(); it != all->End(); ++it)
+        {
 
-        DataNode *node = it->Value();
-        if (node != NULL)
-          this->ProcessNode(node, renderer, surface, layerSortedActors);
+          DataNode *node = it->Value();
+          if (node != NULL)
+            this->ProcessNode(node, renderer, surface, layerSortedActors);
+        }
       }
+
 
       // Add all image actors to the assembly, sorted according to
       // layer property
