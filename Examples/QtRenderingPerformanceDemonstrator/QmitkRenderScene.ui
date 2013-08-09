@@ -144,7 +144,7 @@
      <item>
       <widget class="QPushButton" name="btnData3">
        <property name="text">
-        <string>3</string>
+        <string>2D color image</string>
        </property>
       </widget>
      </item>
@@ -153,14 +153,14 @@
    <item row="3" column="2">
     <widget class="QCheckBox" name="chkWriteSimpleText">
      <property name="text">
-      <string>write text (PlanarFigures)</string>
+      <string>Write text (PlanarFigures)</string>
      </property>
     </widget>
    </item>
    <item row="4" column="2">
     <widget class="QCheckBox" name="chkBinaryContours">
      <property name="text">
-      <string>contours (binary image)</string>
+      <string>Contours (binary image)</string>
      </property>
     </widget>
    </item>
