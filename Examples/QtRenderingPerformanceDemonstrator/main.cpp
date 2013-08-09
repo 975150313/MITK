@@ -25,10 +25,19 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <QApplication>
 #include "QmitkRenderScene.h"
 
-// Load image (nrrd format) and display it in a 2D view
 int main(int argc, char* argv[])
 {
   QmitkRegisterClasses(); // I cannot believe this is still necessary :-(
+
+  if (argc != 2)
+  {
+    MITK_ERROR << "Usage: " << argv[0] << " <number of windows>\n"
+                  "\n"
+                  "Displays <number of windows> QmitkRenderWindows\n"
+                  "with options to load and render data.\n";
+                  "\n"
+                  "See source of QmitkRenderScene.h for details.";
+  }
 
   QApplication qtapplication( argc, argv );
 
