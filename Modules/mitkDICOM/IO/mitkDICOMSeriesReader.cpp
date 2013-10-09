@@ -18,6 +18,10 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkDICOMImageReader.h"
 
+#include <itkMultiThreader.h>
+#include <itkMutexLockHolder.h>
+#include <itkConditionVariable.h>
+
 class mitk::DICOMSeriesReaderImplementation
 {
   public:
@@ -25,7 +29,21 @@ class mitk::DICOMSeriesReaderImplementation
     DICOMSeriesReader::StringList m_Filenames;
     std::vector<DICOMSeries::Pointer> m_Outputs;
 
+    itk::MultiThreader::Pointer m_Threader;
+    DICOMSeriesReader::StringList m_InputsToProcess;
+    typedef itk::SimpleMutexLock MutexType;
+    typedef itk::MutexLockHolder<MutexType> MutexLocker;
+
+    std::list<int> m_ThreadIDs;
+
     void ProcessFile( const std::string& filename );
+    std::string GetNextFileToProcess();
+
+    MutexType m_Lock;
+    MutexType m_WaitingLock;
+    itk::ConditionVariable::Pointer m_FirstResultsAvailable;
+
+    static ITK_THREAD_RETURN_TYPE FileLoader(void*);
 };
 
 
@@ -80,19 +98,112 @@ mitk::DICOMSeriesReader
 
 void
 mitk::DICOMSeriesReader
-::Update()
+::MinimalContinuingUpdate()
+{
+  this->Update(true);
+}
+
+std::string
+mitk::DICOMSeriesReaderImplementation
+::GetNextFileToProcess()
+{
+  MutexLocker lock(this->m_Lock);
+
+  if (this->m_InputsToProcess.empty())
+  {
+    return std::string("");
+  }
+
+  std::string nextFileToProcess = this->m_InputsToProcess.back();
+  this->m_InputsToProcess.pop_back();
+  return nextFileToProcess;
+}
+
+void
+mitk::DICOMSeriesReaderImplementation
+::ProcessFile(const std::string& filename)
+{
+  DICOMImageReader::Pointer imageReader = DICOMImageReader::New();
+  imageReader->SetFilename( filename );
+  try
+  {
+    imageReader->Update();
+  }
+  catch (...)
+  {
+    // TODO error handling
+  }
+
+  for (unsigned int imageIndex = 0; imageIndex < imageReader->GetNumberOfOutputs(); ++imageIndex)
+  {
+    DICOMImage::Pointer image = imageReader->GetOutput(imageIndex);
+    {
+      MutexLocker lock(this->m_Lock);
+      this->m_Outputs.front()->AddDICOMImage( image );
+      MITK_INFO << "Read file " << filename;
+
+      this->m_FirstResultsAvailable->Broadcast();
+    }
+  }
+}
+
+ITK_THREAD_RETURN_TYPE
+mitk::DICOMSeriesReaderImplementation
+::FileLoader(void* infoIn)
+{
+  // run in a thread, meant to load files from an input list
+  // as long as there are more inputs. terminates after the last input.
+
+  itk::MultiThreader::ThreadInfoStruct* info = static_cast<itk::MultiThreader::ThreadInfoStruct*>(infoIn);
+  itk::ThreadIdType tnum = info->ThreadID;
+  DICOMSeriesReaderImplementation* reader = static_cast<DICOMSeriesReaderImplementation*>(info->UserData);
+
+  std::string filename;
+  while ( !(filename = reader->GetNextFileToProcess() ).empty() )
+  {
+    reader->ProcessFile( filename );
+  }
+}
+
+
+void
+mitk::DICOMSeriesReader
+::Update(bool minimalAndContinuing)
 {
   p->m_Outputs.clear();
+  p->m_ThreadIDs.clear();
+
+  p->m_InputsToProcess = p->m_Filenames;
+  p->m_FirstResultsAvailable = itk::ConditionVariable::New();
 
   // TODO separate series UIDs into different outputs! Don't do this here!
   DICOMSeries::Pointer emptySeries = DICOMSeries::New();
   p->m_Outputs.push_back( emptySeries );
 
-  for (StringList::const_iterator iter = p->m_Filenames.begin();
-       iter != p->m_Filenames.end();
-       ++iter)
+  // TODO: check that no old loading thread is still running (or that it can continue safely!)
+  p->m_Threader = itk::MultiThreader::New();
+  unsigned int numberOfThreads(8); // TODO check how much is good for I/O
+  for (unsigned int threadIdx = 0; threadIdx < numberOfThreads; ++threadIdx)
   {
-    p->ProcessFile( *iter );
+    int threadID = p->m_Threader->SpawnThread( mitk::DICOMSeriesReaderImplementation::FileLoader, p );
+    p->m_ThreadIDs.push_back(threadID);
+  }
+
+  if (minimalAndContinuing)
+  {
+    // wait just for some first result
+    p->m_FirstResultsAvailable->Wait( &p->m_WaitingLock );
+  }
+  else
+  {
+    // cleaning, this would also wait but perhaps a signal becomes handy
+    for (std::list<int>::const_iterator threadIter = p->m_ThreadIDs.begin();
+        threadIter != p->m_ThreadIDs.end();
+        ++threadIter)
+    {
+      // wait actually
+      p->m_Threader->TerminateThread( *threadIter );
+    }
   }
 }
 
@@ -115,35 +226,4 @@ mitk::DICOMSeriesReader
   }
 
   return p->m_Outputs[idx];
-}
-
-void
-mitk::DICOMSeriesReader
-::MinimalContinuingUpdate()
-{
-  this->Update();
-  // TODO
-}
-
-void
-mitk::DICOMSeriesReaderImplementation
-::ProcessFile(const std::string& filename)
-{
-  // TODO
-  DICOMImageReader::Pointer imageReader = DICOMImageReader::New();
-  imageReader->SetFilename( filename );
-  try
-  {
-    imageReader->Update();
-  }
-  catch (...)
-  {
-    // TODO error handling
-  }
-
-  for (unsigned int imageIndex = 0; imageIndex < imageReader->GetNumberOfOutputs(); ++imageIndex)
-  {
-    DICOMImage::Pointer image = imageReader->GetOutput(imageIndex);
-    this->m_Outputs.front()->AddDICOMImage( image );
-  }
 }

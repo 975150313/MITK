@@ -34,7 +34,7 @@ class mitkDICOM_EXPORT DICOMSeriesReader : public itk::LightObject
 {
   public:
 
-    typedef std::list<std::string> StringList;
+    typedef std::vector<std::string> StringList;
 
     mitkClassMacro( DICOMSeriesReader, itk::LightObject )
     itkNewMacro( DICOMSeriesReader );
@@ -43,7 +43,7 @@ class mitkDICOM_EXPORT DICOMSeriesReader : public itk::LightObject
     void SetFilename( const std::string& filename );
     void SetFilenames( const StringList& filenames );
     void MinimalContinuingUpdate();
-    void Update();
+    void Update(bool minimalAndContinuing=false);
 
     unsigned int GetNumberOfOutputs() const;
     DICOMSeries::Pointer GetOutput(unsigned int idx = 0) const;
