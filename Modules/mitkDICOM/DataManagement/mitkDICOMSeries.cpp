@@ -31,14 +31,14 @@ class mitk::DICOMSeriesImplementation
 
 mitk::DICOMSeries
 ::DICOMSeries()
-:LightObject()
+:BaseData()
 ,p(new DICOMSeriesImplementation)
 {
 }
 
 mitk::DICOMSeries
 ::DICOMSeries(const DICOMSeries& other)
-:LightObject()
+:BaseData()
 ,p(new DICOMSeriesImplementation)
 {
   DICOMSeriesImplementation::MutexLocker lockerThis(p->m_Lock);
@@ -81,4 +81,34 @@ mitk::DICOMSeries
 {
   DICOMSeriesImplementation::MutexLocker locker(p->m_Lock);
   return p->m_DICOMImages.size();
+}
+
+void
+mitk::DICOMSeries
+::SetRequestedRegionToLargestPossibleRegion()
+{
+  // later, perhaps
+}
+
+bool
+mitk::DICOMSeries
+::RequestedRegionIsOutsideOfTheBufferedRegion()
+{
+  // later, perhaps
+  return false;
+}
+
+bool
+mitk::DICOMSeries
+::VerifyRequestedRegion()
+{
+  // later, perhaps
+  return true;
+}
+
+void
+mitk::DICOMSeries
+::SetRequestedRegion(const itk::DataObject* /*data*/)
+{
+  // later, perhaps
 }

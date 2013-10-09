@@ -19,6 +19,8 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkDICOMImage.h"
 
+#include "mitkBaseData.h"
+
 namespace mitk
 {
 
@@ -30,18 +32,24 @@ class DICOMSeriesImplementation;
   TODO TODO TODO Describe class in more detail.
 
 */
-class mitkDICOM_EXPORT DICOMSeries : public itk::LightObject // TODO BaseData
+class mitkDICOM_EXPORT DICOMSeries : public BaseData
 {
   public:
 
     typedef std::vector<DICOMImage::Pointer> DICOMImageList;
 
-    mitkClassMacro( DICOMSeries, itk::LightObject )
+    mitkClassMacro( DICOMSeries, BaseData )
     itkNewMacro( DICOMSeries );
     mitkCloneMacro( DICOMSeries );
 
     void AddDICOMImage( DICOMImage::Pointer image );
     unsigned int GetNumberOfDICOMImages() const;
+
+    // from BaseData
+    virtual void SetRequestedRegionToLargestPossibleRegion();
+    virtual bool RequestedRegionIsOutsideOfTheBufferedRegion();
+    virtual bool VerifyRequestedRegion();
+    virtual void SetRequestedRegion(const itk::DataObject *data);
 
   protected:
 
