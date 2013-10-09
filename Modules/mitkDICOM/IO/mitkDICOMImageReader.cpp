@@ -29,6 +29,7 @@ class mitk::DICOMImageReaderImplementation
 
     std::string m_Filename;
     std::vector<DICOMImage::Pointer> m_Outputs;
+    PlaneGeometry::Pointer m_ImagePlane;
 
     void ProcessFileGDCM(const std::string& filename);
 
@@ -37,6 +38,15 @@ class mitk::DICOMImageReaderImplementation
 
     OFString findAndGetElementForFrame(DcmDataset* dataset, unsigned long frame, const DcmTagKey& tagKey, unsigned long pos = 0);
     float findAndGetFloatElementForFrame(DcmDataset* dataset, unsigned long frame, const DcmTagKey& tagKey, unsigned long pos = 0);
+
+    Image::Pointer PrepareMITKImage( DcmDataset* dataset, DicomImage* dcmtkImage,
+                                     unsigned long width, unsigned long height,
+                                     double sliceThickness, double spacing[2],
+                                     Point3D imageOrigin,
+                                     Vector3D imageOrientationX,
+                                     Vector3D imageOrientationY );
+
+    PlaneGeometry::Pointer GetImagePlaneGeometry( Image* mitkImage );
 };
 
 
@@ -157,7 +167,7 @@ mitk::DICOMImageReaderImplementation
   std::vector<DICOMImage::Pointer> slices;
 
   DcmFileFormat dicomFile;
-  if ( !dicomFile.loadFile( filename.c_str() ).good() )
+  if ( dicomFile.loadFile( filename.c_str() ).bad() )
   {
     // error handling
   }
@@ -168,11 +178,12 @@ mitk::DICOMImageReaderImplementation
     // error handling
   }
 
-  long numberOfFrames = 0;
+  long numberOfFrames = 1;
 
-  if ( !dicomDataset->findAndGetLongInt( DCM_NumberOfFrames, numberOfFrames ).good() )
+  if ( dicomDataset->findAndGetLongInt( DCM_NumberOfFrames, numberOfFrames ).bad() )
   {
-    // error handling
+    // if we don't have DCM_NumberOfFrames, this file is single-frame so our default init is ok
+    numberOfFrames = 1;
   }
 
   for (long frame = 0; frame < numberOfFrames; ++frame)
@@ -239,13 +250,52 @@ mitk::DICOMImageReaderImplementation
     // TODO error handling
   }
 
-  MITK_INFO << "Read frame " << frame << " as " << numberOfFrames << " image: "
+  double spacing[2] = {1.0, 1.0};
+  try
+  {
+    spacing[0] = this->findAndGetFloatElementForFrame( dicomDataset, frame, DCM_PixelSpacing, 0 );
+    spacing[1] = this->findAndGetFloatElementForFrame( dicomDataset, frame, DCM_PixelSpacing, 1 );
+  }
+  catch (...)
+  {
+    try
+    {
+      spacing[0] = this->findAndGetFloatElementForFrame( dicomDataset, frame, DCM_ImagerPixelSpacing, 0 );
+      spacing[1] = this->findAndGetFloatElementForFrame( dicomDataset, frame, DCM_ImagerPixelSpacing, 1 );
+    }
+    catch (...)
+    {
+      // TODO error handling
+      spacing[0] = 1.0;
+      spacing[1] = 1.0;
+    }
+  }
+
+  double sliceThickness = 1.0;
+  try
+  {
+    sliceThickness = this->findAndGetFloatElementForFrame( dicomDataset, frame, DCM_SliceThickness, 0 );
+  }
+  catch (...)
+  {
+    // TODO error handling
+    sliceThickness = 1.0;
+  }
+
+  assert(frameCount == 1);
+
+  MITK_INFO << "Frame " << frame << ": " << sliceThickness << " mm image of "
             << width << "x" << height
-            << " at (" << imageOrigin[0] << ", " << imageOrigin[1] << ", " << imageOrigin[2]
-            << "), oriented with (" << imageOrientationX[0] << ", " << imageOrientationX[1] << ", " << imageOrientationX[2]
-            << "),(" << imageOrientationY[0] << ", "<< imageOrientationY[1] << ", " << imageOrientationY[2] << ")";
+            << " px of size "
+            << spacing[0] << "x" << spacing[1]
+            << " mm at position (" << imageOrigin[0] << ", " << imageOrigin[1] << ", " << imageOrigin[2]
+            << "), oriented with r(" << imageOrientationX[0] << ", " << imageOrientationX[1] << ", " << imageOrientationX[2]
+            << "), u(" << imageOrientationY[0] << ", "<< imageOrientationY[1] << ", " << imageOrientationY[2] << ")";
 
   DICOMImage::Pointer dicomImage = DICOMImage::New();
+  Image::Pointer mitkSliceImage = this->PrepareMITKImage( dicomDataset, &dcmtkImage, width, height, sliceThickness, spacing, imageOrigin, imageOrientationX, imageOrientationY );
+  dicomImage->SetPixelDataContainer( mitkSliceImage );
+  dicomImage->SetImagePlane( this->GetImagePlaneGeometry( mitkSliceImage ) );
   return dicomImage;
 }
 
@@ -253,11 +303,52 @@ OFString
 mitk::DICOMImageReaderImplementation
 ::findAndGetElementForFrame(DcmDataset* dataset, unsigned long frame, const DcmTagKey& tagKey, unsigned long pos)
 {
+  /*
+    try to find
+     1. per-frame functional group sequence element
+     2. shared functional groups sequence element
+     3. out of these sequences
+  */
   OFString result;
+
+  // 1. per-frame functional group sequence element
+  DcmItem* perFrameFunctionalGroupSequence(NULL);
+  OFCondition perFrameFunctionalGroupSequencePresence =
+    dataset->findAndGetSequenceItem( DCM_PerFrameFunctionalGroupsSequence,
+                                     perFrameFunctionalGroupSequence,
+                                     frame );
+
+  if (perFrameFunctionalGroupSequencePresence.good() && perFrameFunctionalGroupSequence)
+  {
+    // try to find frame-specific value
+    if ( perFrameFunctionalGroupSequence->findAndGetOFString(tagKey, result, pos, true).good() )
+    {
+      return result;
+    }
+  }
+
+  // 2. shared functional groups sequence element
+  DcmItem* sharedFunctionalGroupsSequence(NULL);
+  OFCondition sharedFunctionalGroupsSequencePresence =
+    dataset->findAndGetSequenceItem( DCM_SharedFunctionalGroupsSequence,
+                                     sharedFunctionalGroupsSequence,
+                                     frame );
+
+  if (sharedFunctionalGroupsSequencePresence.good() && sharedFunctionalGroupsSequence)
+  {
+    // try to find frame-specific value
+    if ( sharedFunctionalGroupsSequence->findAndGetOFString(tagKey, result, pos, true).good() )
+    {
+      return result;
+    }
+  }
+
+  // 3. out of these sequences
   if ( dataset->findAndGetOFString(tagKey, result, pos, true).bad() )
   {
     throw std::range_error("Could not find requested tag");
   };
+
   return result;
 }
 
@@ -267,4 +358,46 @@ mitk::DICOMImageReaderImplementation
 {
   OFString stringValue = this->findAndGetElementForFrame(dataset, frame, tagKey, pos);
   return static_cast<float>( atof( stringValue.c_str() ) ); // TODO: error handling
+}
+
+mitk::Image::Pointer
+mitk::DICOMImageReaderImplementation
+::PrepareMITKImage( DcmDataset* dataset, DicomImage* dcmtkImage,
+                    unsigned long width, unsigned long height,
+                    double sliceThickness, double spacing[2],
+                    Point3D imageOrigin,
+                    Vector3D imageOrientationX,
+                    Vector3D imageOrientationY)
+{
+  Image::Pointer mitkImage = Image::New();
+  unsigned int numberOfSlices = 1;
+
+  mitk::Vector3D mitkSpacing;
+  mitkSpacing[0] = spacing[0];
+  mitkSpacing[1] = spacing[1];
+  mitkSpacing[2] = sliceThickness; // NOT equal to z-spacing, may overlap. but for a single slice we can say thickness == z-spacing
+
+  //InitializeStandardPlane(rightVector, downVector, spacing)
+  mitk::PlaneGeometry::Pointer planeGeometry = mitk::PlaneGeometry::New();
+  planeGeometry->InitializeStandardPlane( spacing[0] * width, spacing[1] * height, imageOrientationX, imageOrientationY, &mitkSpacing);
+  planeGeometry->ChangeImageGeometryConsideringOriginOffset(true);
+  planeGeometry->SetOrigin(imageOrigin);
+
+  // Testing Initialize(const mitk::PixelType& type, const mitk::Geometry3D& geometry, unsigned int slices) with PlaneGeometry and GetData(): ";
+  mitkImage->Initialize( mitk::MakePixelType<int, int, 1>(), *planeGeometry, numberOfSlices );
+
+  // TODO pixel data!
+
+  this->m_ImagePlane = planeGeometry;
+
+  return mitkImage;
+}
+
+mitk::PlaneGeometry::Pointer
+mitk::DICOMImageReaderImplementation
+::GetImagePlaneGeometry( Image* mitkImage )
+{
+  PlaneGeometry::Pointer plane = PlaneGeometry::New();
+
+  return this->m_ImagePlane;
 }
