@@ -20,28 +20,33 @@ class mitk::DICOMSeriesImplementation
 {
   public:
 
+    DICOMSeries::DICOMImageList m_DICOMImages;
 };
 
-
-mitk::DICOMSeries::DICOMSeries()
+mitk::DICOMSeries
+::DICOMSeries()
 :LightObject()
 ,p(new DICOMSeriesImplementation)
 {
 }
 
-mitk::DICOMSeries::DICOMSeries(const DICOMSeries& other)
+mitk::DICOMSeries
+::DICOMSeries(const DICOMSeries& other)
 :LightObject()
 ,p(new DICOMSeriesImplementation)
 {
   this->p = other.p;
 }
 
-mitk::DICOMSeries::~DICOMSeries()
+mitk::DICOMSeries
+::~DICOMSeries()
 {
   delete p;
 }
 
-mitk::DICOMSeries& mitk::DICOMSeries::operator=(const mitk::DICOMSeries& other)
+mitk::DICOMSeries&
+mitk::DICOMSeries
+::operator=(const mitk::DICOMSeries& other)
 {
   if (this != &other)
   {
@@ -49,4 +54,18 @@ mitk::DICOMSeries& mitk::DICOMSeries::operator=(const mitk::DICOMSeries& other)
   }
 
   return *this;
+}
+
+void
+mitk::DICOMSeries
+::AddDICOMImage(DICOMImage::Pointer image)
+{
+  p->m_DICOMImages.push_back( image );
+}
+
+unsigned int
+mitk::DICOMSeries
+::GetNumberOfDICOMImages() const
+{
+  return p->m_DICOMImages.size();
 }

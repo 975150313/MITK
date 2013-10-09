@@ -43,7 +43,7 @@ class mitkDICOM_EXPORT DICOMDataset : public itk::LightObject
 
     template <typename T>
     T
-    GetAttributeValue(int /*group*/, int /*element*/) // TODO replace by DICOMTag class // TODO hide implementation as much as possible
+    GetAttributeValue(int /*group*/, int /*element*/) const // TODO replace by DICOMTag class // TODO hide implementation as much as possible
     {
       T empty;
       throw empty; // not yet implemented

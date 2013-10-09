@@ -2,6 +2,9 @@ MITK_CREATE_MODULE_TESTS()
 
 set(DICOM_TEST_IMAGE_ROOT "/home/maleike/DICOM-Testbilder")
 
+
+# IMAGE reader tests
+
 # simple plane image (charset test)
 mitkAddCustomModuleTest(mitkDICOMImageReaderTest_SCSARAB mitkDICOMImageReaderTest 1 ${DICOM_TEST_IMAGE_ROOT}/charsets/SCSARAB)
 
@@ -10,3 +13,9 @@ mitkAddCustomModuleTest(mitkDICOMImageReaderTest_SCSARAB mitkDICOMImageReaderTes
 # per-frame orientation (from NEMA collection)
 mitkAddCustomModuleTest(mitkDICOMImageReaderTest_nema_0031 mitkDICOMImageReaderTest 15 ${DICOM_TEST_IMAGE_ROOT}/multiframe/CT/medical.nema.org/medical/Dicom/Multiframe/CT/DISCIMG/IMAGES/CT0031)
 mitkAddCustomModuleTest(mitkDICOMImageReaderTest_nema_0033 mitkDICOMImageReaderTest 7 ${DICOM_TEST_IMAGE_ROOT}/multiframe/CT/medical.nema.org/medical/Dicom/Multiframe/CT/DISCIMG/IMAGES/CT0033)
+
+# SERIES reader tests
+mitkAddCustomModuleTest(mitkDICOMSeriesReaderTest_nema_0033 mitkDICOMSeriesReaderTest 7 ${DICOM_TEST_IMAGE_ROOT}/multiframe/CT/medical.nema.org/medical/Dicom/Multiframe/CT/DISCIMG/IMAGES/CT0033)
+
+file(GLOB petTK3DFilenames ${DICOM_TEST_IMAGE_ROOT}/PET-TK-3D/*.dcm)
+mitkAddCustomModuleTest(mitkDICOMSeriesReaderTest_PET_TK_3D mitkDICOMSeriesReaderTest 299 ${petTK3DFilenames})

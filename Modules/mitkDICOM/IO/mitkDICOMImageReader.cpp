@@ -28,7 +28,7 @@ class mitk::DICOMImageReaderImplementation
   public:
 
     std::string m_Filename;
-    std::vector<DICOMImage::Pointer> m_Outputs;
+    DICOMImageReader::DICOMImageList m_Outputs;
     PlaneGeometry::Pointer m_ImagePlane;
 
     void ProcessFileGDCM(const std::string& filename);

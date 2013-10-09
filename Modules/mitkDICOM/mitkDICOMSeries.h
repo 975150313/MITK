@@ -34,9 +34,14 @@ class mitkDICOM_EXPORT DICOMSeries : public itk::LightObject // TODO BaseData
 {
   public:
 
+    typedef std::vector<DICOMImage::Pointer> DICOMImageList;
+
     mitkClassMacro( DICOMSeries, itk::LightObject )
     itkNewMacro( DICOMSeries );
     mitkCloneMacro( DICOMSeries );
+
+    void AddDICOMImage( DICOMImage::Pointer image );
+    unsigned int GetNumberOfDICOMImages() const;
 
   protected:
 

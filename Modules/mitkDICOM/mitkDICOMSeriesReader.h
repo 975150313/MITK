@@ -14,15 +14,15 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 ===================================================================*/
 
-#ifndef mitkDICOMImageReader_h
-#define mitkDICOMImageReader_h
+#ifndef mitkDICOMSeriesReader_h
+#define mitkDICOMSeriesReader_h
 
-#include "mitkDICOMImage.h"
+#include "mitkDICOMSeries.h"
 
 namespace mitk
 {
 
-class DICOMImageReaderImplementation;
+class DICOMSeriesReaderImplementation;
 
 /**
   \brief TODO TODO TODO Describe class.
@@ -30,32 +30,35 @@ class DICOMImageReaderImplementation;
   TODO TODO TODO Describe class in more detail.
 
 */
-class mitkDICOM_EXPORT DICOMImageReader : public itk::LightObject
+class mitkDICOM_EXPORT DICOMSeriesReader : public itk::LightObject
 {
   public:
 
-    typedef std::vector<DICOMImage::Pointer> DICOMImageList;
+    typedef std::list<std::string> StringList;
 
-    mitkClassMacro( DICOMImageReader, itk::LightObject )
-    itkNewMacro( DICOMImageReader );
-    mitkCloneMacro( DICOMImageReader );
+    mitkClassMacro( DICOMSeriesReader, itk::LightObject )
+    itkNewMacro( DICOMSeriesReader );
+    mitkCloneMacro( DICOMSeriesReader );
 
     void SetFilename( const std::string& filename );
+    void SetFilenames( const StringList& filenames );
+    void MinimalContinuingUpdate();
     void Update();
+
     unsigned int GetNumberOfOutputs() const;
-    DICOMImage::Pointer GetOutput(unsigned int idx = 0) const;
+    DICOMSeries::Pointer GetOutput(unsigned int idx = 0) const;
 
   protected:
 
-    DICOMImageReader();
-    virtual ~DICOMImageReader();
+    DICOMSeriesReader();
+    virtual ~DICOMSeriesReader();
 
-    DICOMImageReader(const DICOMImageReader& other);
-    DICOMImageReader& operator=(const DICOMImageReader& other);
+    DICOMSeriesReader(const DICOMSeriesReader& other);
+    DICOMSeriesReader& operator=(const DICOMSeriesReader& other);
 
   private:
 
-    DICOMImageReaderImplementation* p;
+    DICOMSeriesReaderImplementation* p;
 };
 
 }

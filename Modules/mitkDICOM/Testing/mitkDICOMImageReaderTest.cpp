@@ -42,6 +42,9 @@ int mitkDICOMImageReaderTest(int argc, char* argv[])
   MITK_TEST_CONDITION(dicomImage->GetPixelDataContainer().IsNotNull(),"Read DICOMImage has pixel data");
   MITK_TEST_CONDITION(dicomImage->GetImagePlane().IsNotNull(),"Read DICOMImage has orientation");
 
+  // TODO Add most testing parameters: expect certain features of images and planes and verify these.
+  //      There is a nice Excel list for testing in the NEMA collection of multi-frame images.
+
   // always end with this!
   MITK_TEST_END();
 }
