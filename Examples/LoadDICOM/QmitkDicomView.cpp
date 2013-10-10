@@ -1,5 +1,4 @@
 /*===================================================================
-
   The Medical Imaging Interaction Toolkit (MITK)
 
   Copyright (c) German Cancer Research Center,
@@ -18,19 +17,49 @@
 
 #include "ui_QmitkDicomView.h"
 
+#include "mitkDataNode.h"
+#include "mitkIOUtil.h"
+#include "mitkDisplayInteractor.h"
+
+#include "usGetModuleContext.h"
+
 #include <itkCommand.h>
 
 QmitkDicomView::QmitkDicomView(QWidget* parent, Qt::WindowFlags f)
 : QWidget(parent, f)
 , m_GUI( new Ui::QmitkDicomView )
+, m_Scroller( mitk::DisplayInteractor::New() )
 {
   m_GUI->setupUi(this);
 
-  connect( m_GUI->btnLoad, SIGNAL(clicked()), this, SLOT(LoadDICOMFiles()) );
+  connect( m_GUI->btnLoadDICOM, SIGNAL(clicked()), this, SLOT(LoadDICOMFiles()) );
+  connect( m_GUI->btnLoadSth, SIGNAL(clicked()), this, SLOT(LoadSomething()) );
 
   connect( this, SIGNAL(SignalProgressFromReaderThread()), this, SLOT(ReportProgressFromReader()), Qt::QueuedConnection );
 
   m_GUI->progressBar->setFormat("%v / %m files");
+
+  this->SetupRendering();
+}
+
+void QmitkDicomView::SetupRendering()
+{
+  static bool twice = false;
+  if (twice) exit(0);
+  m_DataStorage = mitk::StandaloneDataStorage::New().GetPointer();
+
+  m_RenderingManager = mitk::RenderingManager::New();
+  m_RenderingManager->SetDataStorage( m_DataStorage );
+  m_RenderWindow = new QmitkRenderWindow( m_GUI->renderWindowContainer, "", NULL, m_RenderingManager );
+  m_GUI->renderWindowContainer->layout()->addWidget( m_RenderWindow );
+  m_RenderWindow->show();
+
+  m_Scroller->LoadStateMachine("DisplayInteraction.xml");
+  m_Scroller->SetEventConfig("DisplayConfigMITK.xml");
+
+  us::GetModuleContext()->RegisterService<mitk::InteractionEventObserver>( m_Scroller.GetPointer() );
+
+  twice = true;
 }
 
 QmitkDicomView::~QmitkDicomView()
@@ -94,4 +123,56 @@ void QmitkDicomView::ReportProgressFromReader()
 
 void QmitkDicomView::SeriesLoadingCompleted()
 {
+  mitk::DICOMSeries::Pointer series = m_Reader->GetOutput(0);
+
+  mitk::DataNode::Pointer node = mitk::DataNode::New();
+  node->SetData( series );
+  node->SetName( "DICOM series" );
+}
+
+void QmitkDicomView::LoadSomething()
+{
+  QStringList filenames;
+  filenames << "/RAID/home/maleike/Pic3D.nrrd";
+
+  std::vector< std::string > stl_filenames;
+  foreach (QString filename, filenames)
+  {
+    stl_filenames.push_back( qPrintable( filename) );
+  }
+
+  mitk::DataStorage::Pointer storage = mitk::IOUtil::LoadFiles( stl_filenames );
+  mitk::DataStorage::SetOfObjects::ConstPointer objects = storage->GetAll();
+  for ( mitk::DataStorage::SetOfObjects::const_iterator iter = objects->begin();
+      iter != objects->end();
+      ++iter )
+  {
+    m_DataStorage->Add( *iter );
+  }
+
+  this->ReinitViewToContainEverything();
+}
+
+void QmitkDicomView::ReinitViewToContainEverything()
+{
+  mitk::TimeSlicedGeometry::Pointer worldGeometry = m_DataStorage->ComputeBoundingGeometry3D( m_DataStorage->GetAll() );
+
+  // basically a copy of RenderingManager::InternalViewInitialization
+  mitk::BaseRenderer* baseRenderer = m_RenderWindow->GetRenderer();
+  mitk::SliceNavigationController *nc = baseRenderer->GetSliceNavigationController();
+
+  // Re-initialize view direction
+  nc->SetViewDirectionToDefault();
+
+  // Set geometry for NC
+  nc->SetInputWorldGeometry( worldGeometry );
+  nc->Update();
+
+  nc->GetSlice()->SetPos( nc->GetSlice()->GetSteps() / 2 );
+
+  // Fit the render window DisplayGeometry
+  baseRenderer->GetDisplayGeometry()->Fit();
+
+  // Make sure the slice keeps moving
+  nc->GetSlice()->SetAutoRepeat( true );
 }

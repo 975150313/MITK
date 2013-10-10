@@ -32,11 +32,18 @@ margin: 0.5px;
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,4">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,1">
      <item>
-      <widget class="QPushButton" name="btnLoad">
+      <widget class="QPushButton" name="btnLoadDICOM">
        <property name="text">
         <string>Load DICOM files...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnLoadSth">
+       <property name="text">
+        <string>Pic3D</string>
        </property>
       </widget>
      </item>
@@ -65,7 +72,16 @@ margin: 0.5px;
     </layout>
    </item>
    <item>
-    <widget class="QWidget" name="renderWindow" native="true"/>
+    <widget class="QWidget" name="renderWindowContainer" native="true">
+     <property name="styleSheet">
+      <string notr="true">border: 2px solid red;</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="margin">
+       <number>2</number>
+      </property>
+     </layout>
+    </widget>
    </item>
   </layout>
  </widget>

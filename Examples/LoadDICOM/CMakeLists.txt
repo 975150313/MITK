@@ -24,8 +24,12 @@ link_directories(${ALL_LIBRARY_DIRS})
 QT4_WRAP_UI(GENERATED_UI_CPP QmitkDicomView.ui)
 QT4_WRAP_CPP(GENERATED_MOC_CPP QmitkDicomView.h)
 
-add_executable(${PROJECT_NAME} main.cpp QmitkDicomView.cpp ${GENERATED_UI_CPP} ${GENERATED_MOC_CPP})
+usFunctionGenerateExecutableInit(us_init_src IDENTIFIER ${PROJECT_NAME})
+
+
+add_executable(${PROJECT_NAME} main.cpp QmitkDicomView.cpp ${GENERATED_UI_CPP} ${GENERATED_MOC_CPP} ${us_init_src})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBRARIES})
+
 
 # This is for subproject support inside the MITK source tree.
 # Ignore/remove the following code if you build an external application.
