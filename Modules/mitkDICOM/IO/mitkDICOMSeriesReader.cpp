@@ -26,6 +26,8 @@ class mitk::DICOMSeriesReaderImplementation
 {
   public:
 
+    DICOMSeriesReaderImplementation(DICOMSeriesReader* object):m_Object(object){}
+
     DICOMSeriesReader::StringList m_Filenames;
     std::vector<DICOMSeries::Pointer> m_Outputs;
 
@@ -43,21 +45,24 @@ class mitk::DICOMSeriesReaderImplementation
     MutexType m_WaitingLock;
     itk::ConditionVariable::Pointer m_FirstResultsAvailable;
 
+    DICOMSeriesReader::Progress m_Progress;
+    DICOMSeriesReader* m_Object;
+
     static ITK_THREAD_RETURN_TYPE FileLoader(void*);
 };
 
 
 mitk::DICOMSeriesReader
 ::DICOMSeriesReader()
-:itk::LightObject()
-,p(new DICOMSeriesReaderImplementation)
+:itk::Object()
+,p(new DICOMSeriesReaderImplementation(this))
 {
 }
 
 mitk::DICOMSeriesReader
 ::DICOMSeriesReader(const DICOMSeriesReader& other)
-:itk::LightObject()
-,p(new DICOMSeriesReaderImplementation)
+:itk::Object()
+,p(new DICOMSeriesReaderImplementation(this))
 {
   this->p = other.p;
 }
@@ -140,9 +145,16 @@ mitk::DICOMSeriesReaderImplementation
     {
       MutexLocker lock(this->m_Lock);
       this->m_Outputs.front()->AddDICOMImage( image );
-      MITK_INFO << "Read file " << filename;
+      this->m_Progress.filesLoaded += 1;
+      if (this->m_Progress.filesLoaded == this->m_Progress.filesTotal)
+      {
+        this->m_Progress.complete = true;
+      }
+      //MITK_INFO << "Read file " << filename;
 
       this->m_FirstResultsAvailable->Broadcast();
+      //MITK_INFO << "InvokeEvent (itk::ProgressEvent() )";
+      this->m_Object->InvokeEvent( itk::ProgressEvent() );
     }
   }
 }
@@ -180,9 +192,13 @@ mitk::DICOMSeriesReader
   DICOMSeries::Pointer emptySeries = DICOMSeries::New();
   p->m_Outputs.push_back( emptySeries );
 
+  p->m_Progress.complete = false;
+  p->m_Progress.filesLoaded = 0;
+  p->m_Progress.filesTotal = p->m_InputsToProcess.size();
+
   // TODO: check that no old loading thread is still running (or that it can continue safely!)
   p->m_Threader = itk::MultiThreader::New();
-  unsigned int numberOfThreads(8); // TODO check how much is good for I/O
+  unsigned int numberOfThreads(4); // TODO check how much is good for I/O
   for (unsigned int threadIdx = 0; threadIdx < numberOfThreads; ++threadIdx)
   {
     int threadID = p->m_Threader->SpawnThread( mitk::DICOMSeriesReaderImplementation::FileLoader, p );
@@ -226,4 +242,12 @@ mitk::DICOMSeriesReader
   }
 
   return p->m_Outputs[idx];
+}
+
+mitk::DICOMSeriesReader::Progress
+mitk::DICOMSeriesReader
+::GetProgress() const
+{
+  DICOMSeriesReaderImplementation::MutexLocker lock(p->m_Lock);
+  return p->m_Progress;
 }

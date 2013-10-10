@@ -30,15 +30,24 @@ class DICOMSeriesReaderImplementation;
   TODO TODO TODO Describe class in more detail.
 
 */
-class mitkDICOM_EXPORT DICOMSeriesReader : public itk::LightObject
+class mitkDICOM_EXPORT DICOMSeriesReader : public itk::Object
 {
   public:
+
+    struct Progress
+    {
+      bool complete;
+      unsigned int filesLoaded;
+      unsigned int filesTotal;
+    };
 
     typedef std::vector<std::string> StringList;
 
     mitkClassMacro( DICOMSeriesReader, itk::LightObject )
     itkNewMacro( DICOMSeriesReader );
     mitkCloneMacro( DICOMSeriesReader );
+
+    Progress GetProgress() const;
 
     void SetFilename( const std::string& filename );
     void SetFilenames( const StringList& filenames );

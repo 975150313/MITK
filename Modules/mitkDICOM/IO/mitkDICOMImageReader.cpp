@@ -283,7 +283,7 @@ mitk::DICOMImageReaderImplementation
   }
 
   assert(frameCount == 1);
-
+/*
   MITK_INFO << "Frame " << frame << ": " << sliceThickness << " mm image of "
             << width << "x" << height
             << " px of size "
@@ -291,7 +291,7 @@ mitk::DICOMImageReaderImplementation
             << " mm at position (" << imageOrigin[0] << ", " << imageOrigin[1] << ", " << imageOrigin[2]
             << "), oriented with r(" << imageOrientationX[0] << ", " << imageOrientationX[1] << ", " << imageOrientationX[2]
             << "), u(" << imageOrientationY[0] << ", "<< imageOrientationY[1] << ", " << imageOrientationY[2] << ")";
-
+*/
   DICOMImage::Pointer dicomImage = DICOMImage::New();
   Image::Pointer mitkSliceImage = this->PrepareMITKImage( dicomDataset, &dcmtkImage, width, height, sliceThickness, spacing, imageOrigin, imageOrientationX, imageOrientationY );
   dicomImage->SetPixelDataContainer( mitkSliceImage );

@@ -52,6 +52,7 @@ if(MITK_USE_QT)
   list(APPEND _example_dirs
     Tutorial
     QtAppExample
+    LoadDICOM
   )
 endif()
 
