@@ -6,7 +6,7 @@ set(H_FILES
   mitkDICOMSeriesReader.h
  mitkDICOMImageReader.h
 
-#  mitkDICOMSeriesMapperVtk2D.h
+  mitkDICOMSeriesMapperVtk2D.h
 )
 
 set(CPP_FILES
@@ -17,5 +17,5 @@ set(CPP_FILES
   IO/mitkDICOMSeriesReader.cpp
   IO/mitkDICOMImageReader.cpp
 
-#  Rendering/mitkDICOMSeriesMapperVtk2D.cpp
+  Rendering/mitkDICOMSeriesMapperVtk2D.cpp
 )

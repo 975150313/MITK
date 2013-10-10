@@ -37,6 +37,7 @@ class mitkDICOM_EXPORT DICOMSeries : public BaseData
   public:
 
     typedef std::vector<DICOMImage::Pointer> DICOMImageList;
+    typedef std::vector<DICOMImage::ConstPointer> ConstDICOMImageList;
 
     mitkClassMacro( DICOMSeries, BaseData )
     itkNewMacro( DICOMSeries );
@@ -44,6 +45,7 @@ class mitkDICOM_EXPORT DICOMSeries : public BaseData
 
     void AddDICOMImage( DICOMImage::Pointer image );
     unsigned int GetNumberOfDICOMImages() const;
+    ConstDICOMImageList GetAllDICOMImages() const;
 
     // from BaseData
     virtual void SetRequestedRegionToLargestPossibleRegion();

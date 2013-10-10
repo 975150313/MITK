@@ -55,6 +55,7 @@ class QmitkDicomView : public QWidget
 
     void LoadDICOMFiles();
     void LoadSomething();
+    void FirstSeriesLoadingResultAvailable();
     void SeriesLoadingCompleted();
 
     // callback

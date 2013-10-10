@@ -20,6 +20,7 @@
 #include "mitkDataNode.h"
 #include "mitkIOUtil.h"
 #include "mitkDisplayInteractor.h"
+#include "mitkDICOMSeriesMapperVtk2D.h"
 
 #include "usGetModuleContext.h"
 
@@ -101,6 +102,8 @@ void QmitkDicomView::LoadDICOMFiles()
   m_Reader->SetFilenames( filenames );
 
   m_Reader->MinimalContinuingUpdate();
+
+  this->FirstSeriesLoadingResultAvailable();
 }
 
 void QmitkDicomView::ReceiveProgressFromReaderThread()
@@ -121,13 +124,22 @@ void QmitkDicomView::ReportProgressFromReader()
   }
 }
 
-void QmitkDicomView::SeriesLoadingCompleted()
+void QmitkDicomView::FirstSeriesLoadingResultAvailable()
 {
   mitk::DICOMSeries::Pointer series = m_Reader->GetOutput(0);
 
   mitk::DataNode::Pointer node = mitk::DataNode::New();
   node->SetData( series );
   node->SetName( "DICOM series" );
+
+  mitk::DICOMSeriesMapperVtk2D::Pointer mapper = mitk::DICOMSeriesMapperVtk2D::New();
+  node->SetMapper(mitk::BaseRenderer::Standard2D, mapper);
+
+  m_DataStorage->Add( node );
+}
+
+void QmitkDicomView::SeriesLoadingCompleted()
+{
 }
 
 void QmitkDicomView::LoadSomething()

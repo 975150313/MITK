@@ -60,6 +60,8 @@ void mitk::VtkMapper::MitkRenderOpaqueGeometry(BaseRenderer* renderer)
   GetDataNode()->GetVisibility(visible, renderer, "visible");
   if ( !visible) return;
 
+  if ( !this->GetVtkProp(renderer) ) return;
+
   if ( this->GetVtkProp(renderer)->GetVisibility() )
   {
     GetVtkProp(renderer)->RenderOpaqueGeometry( renderer->GetVtkRenderer() );

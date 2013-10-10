@@ -27,19 +27,25 @@ class mitk::DICOMSeriesImplementation
 
     MutexType m_Lock;
     DICOMSeries::DICOMImageList m_DICOMImages;
+
+    DICOMSeriesImplementation(DICOMSeries* object):m_Object(object){}
+
+    void UpdateGeometry();
+
+    DICOMSeries* m_Object;
 };
 
 mitk::DICOMSeries
 ::DICOMSeries()
 :BaseData()
-,p(new DICOMSeriesImplementation)
+,p(new DICOMSeriesImplementation(this))
 {
 }
 
 mitk::DICOMSeries
 ::DICOMSeries(const DICOMSeries& other)
 :BaseData()
-,p(new DICOMSeriesImplementation)
+,p(new DICOMSeriesImplementation(this))
 {
   DICOMSeriesImplementation::MutexLocker lockerThis(p->m_Lock);
   DICOMSeriesImplementation::MutexLocker lockerOther(other.p->m_Lock);
@@ -73,6 +79,8 @@ mitk::DICOMSeries
 {
   DICOMSeriesImplementation::MutexLocker locker(p->m_Lock);
   p->m_DICOMImages.push_back( image );
+
+  p->UpdateGeometry();
 }
 
 unsigned int
@@ -111,4 +119,32 @@ mitk::DICOMSeries
 ::SetRequestedRegion(const itk::DataObject* /*data*/)
 {
   // later, perhaps
+}
+
+mitk::DICOMSeries::ConstDICOMImageList
+mitk::DICOMSeries
+::GetAllDICOMImages() const
+{
+  DICOMSeriesImplementation::MutexLocker locker(p->m_Lock);
+
+  ConstDICOMImageList copy;
+  std::copy( p->m_DICOMImages.begin(), p->m_DICOMImages.end(), copy.begin() );
+  return copy;
+}
+
+void
+mitk::DICOMSeriesImplementation
+::UpdateGeometry()
+{
+  MITK_INFO << "DICOMSeries::UdpateGeometry()";
+
+  for (DICOMSeries::DICOMImageList::iterator iter = m_DICOMImages.begin();
+       iter != m_DICOMImages.end();
+       ++iter)
+  {
+    PlaneGeometry::Pointer imagePlane = (*iter)->GetImagePlane();
+    MITK_INFO <<" .. 1 more plane";
+    m_Object->SetGeometry( imagePlane );
+    break;
+  }
 }
