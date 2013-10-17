@@ -36,7 +36,11 @@ QmitkDicomView::QmitkDicomView(QWidget* parent, Qt::WindowFlags f)
   connect( m_GUI->btnLoadDICOM, SIGNAL(clicked()), this, SLOT(LoadDICOMFiles()) );
   connect( m_GUI->btnLoadSth, SIGNAL(clicked()), this, SLOT(LoadSomething()) );
 
+  connect( m_GUI->btnNextSlice, SIGNAL(clicked()), this, SLOT(GoToPreviousSlice()) );
+  connect( m_GUI->btnPreviousSlice, SIGNAL(clicked()), this, SLOT(GoToNextSlice()) );
+
   connect( this, SIGNAL(SignalProgressFromReaderThread()), this, SLOT(ReportProgressFromReader()), Qt::QueuedConnection );
+  //connect( this, SIGNAL(SignalModifiedFromReaderThread()), this, SLOT(ProcessModifiedDataNode()), Qt::QueuedConnection );
 
   m_GUI->progressBar->setFormat("%v / %m files");
 
@@ -56,7 +60,7 @@ void QmitkDicomView::SetupRendering()
   m_RenderWindow->show();
 
   m_Scroller->LoadStateMachine("DisplayInteraction.xml");
-  m_Scroller->SetEventConfig("DisplayConfigMITK.xml");
+  m_Scroller->SetEventConfig("DisplayConfigPACS.xml");
 
   us::GetModuleContext()->RegisterService<mitk::InteractionEventObserver>( m_Scroller.GetPointer() );
 
@@ -102,6 +106,7 @@ void QmitkDicomView::LoadDICOMFiles()
   m_Reader->SetFilenames( filenames );
 
   m_Reader->MinimalContinuingUpdate();
+  //m_Reader->Update();
 
   this->FirstSeriesLoadingResultAvailable();
 }
@@ -124,22 +129,78 @@ void QmitkDicomView::ReportProgressFromReader()
   }
 }
 
+void QmitkDicomView::ReceiveModifiedFromReaderThread()
+{
+  // once through the event loop to end up in GUI thread
+  //emit SignalModifiedFromReaderThread();
+
+  QApplication::postEvent( this, new QmitkDicomViewUpdateEvent );
+}
+
+void QmitkDicomView::ProcessModifiedDataNode()
+{
+  this->UpdateToModifiedSeries();
+}
+
+
 void QmitkDicomView::FirstSeriesLoadingResultAvailable()
 {
   mitk::DICOMSeries::Pointer series = m_Reader->GetOutput(0);
 
-  mitk::DataNode::Pointer node = mitk::DataNode::New();
-  node->SetData( series );
-  node->SetName( "DICOM series" );
+  assert(series.IsNotNull());
+  assert(series->GetGeometry() != 0);
+
+  m_DataNode = mitk::DataNode::New();
+  m_DataNode->SetData( series );
+  m_DataNode->SetName( "DICOM series" );
 
   mitk::DICOMSeriesMapperVtk2D::Pointer mapper = mitk::DICOMSeriesMapperVtk2D::New();
-  node->SetMapper(mitk::BaseRenderer::Standard2D, mapper);
+  m_DataNode->SetMapper(mitk::BaseRenderer::Standard2D, mapper);
 
-  m_DataStorage->Add( node );
+  itk::SimpleMemberCommand<QmitkDicomView>::Pointer modifiedCommand = itk::SimpleMemberCommand<QmitkDicomView>::New();
+  modifiedCommand->SetCallbackFunction( this, &QmitkDicomView::ReceiveModifiedFromReaderThread );
+  m_ModifiedCallback = series->AddObserver( itk::ModifiedEvent(), modifiedCommand );
+
+
+  /*
+  std::cout << "--------------- BEGIN DataNode for series ----------------" << std::endl;
+  m_DataNode->Print( std::cout );
+  std::cout << "--------------- Series ----------------" << std::endl;
+  series->Print( std::cout );
+  std::cout << "--------------- END Series ----------------" << std::endl;
+  std::cout << "--------------- END DataNode for series ----------------" << std::endl;
+  */
+
+  m_DataStorage->Add( m_DataNode );
+
+  this->UpdateToModifiedSeries();
+}
+
+bool QmitkDicomView::event( QEvent *event )
+{
+  if ( event->type() == (QEvent::Type) QmitkDicomViewUpdateEvent::Modified )
+  {
+    // Directly process all pending rendering requests
+    this->UpdateToModifiedSeries();
+    return true;
+  }
+
+  return QWidget::event(event);
+}
+
+void QmitkDicomView::UpdateToModifiedSeries()
+{
+  mitk::DICOMSeries::Pointer series = dynamic_cast<mitk::DICOMSeries*>( m_DataNode->GetData() );
+  //MITK_INFO << "-------------- Series geometry -----------";
+  //mitk::Geometry3D::Pointer geo = series->GetGeometry();
+  //geo->Print(std::cout);
+  this->ReinitViewToContainEverything(m_DataNode);
 }
 
 void QmitkDicomView::SeriesLoadingCompleted()
 {
+  //this->UpdateToModifiedSeries();
+  this->ReinitViewToContainEverything(m_DataNode);
 }
 
 void QmitkDicomView::LoadSomething()
@@ -165,26 +226,113 @@ void QmitkDicomView::LoadSomething()
   this->ReinitViewToContainEverything();
 }
 
-void QmitkDicomView::ReinitViewToContainEverything()
+#include <time.h>
+
+int diff_ms(timeval t1, timeval t2)
 {
-  mitk::TimeSlicedGeometry::Pointer worldGeometry = m_DataStorage->ComputeBoundingGeometry3D( m_DataStorage->GetAll() );
+  return (((t1.tv_sec - t2.tv_sec) * 1000000) +
+      (t1.tv_usec - t2.tv_usec))/1000;
+}
 
-  // basically a copy of RenderingManager::InternalViewInitialization
-  mitk::BaseRenderer* baseRenderer = m_RenderWindow->GetRenderer();
-  mitk::SliceNavigationController *nc = baseRenderer->GetSliceNavigationController();
+void QmitkDicomView::ReinitViewToContainEverything(mitk::DataNode* node, bool really)
+{
 
-  // Re-initialize view direction
-  nc->SetViewDirectionToDefault();
+  if (!really)
+  {
+    static clock_t lasttime = 0;
+    static clock_t minWaitTime = CLOCKS_PER_SEC * 1.0; // minimum a second before updating geometry again!
+    if (clock() - lasttime < minWaitTime) return;
+    lasttime = clock();
+  }
+
+  // TODO before updating, remember old position and reinit to view this position!
+  bool oldPositionDefined = false;
+  mitk::Point3D oldPosition;
 
   // Set geometry for NC
-  nc->SetInputWorldGeometry( worldGeometry );
+  if (node)
+  {
+    mitk::DICOMSeries* series = dynamic_cast<mitk::DICOMSeries*>( node->GetData() );
+
+    if (series)
+    {
+      // basically a copy of RenderingManager::InternalViewInitialization
+      mitk::BaseRenderer* baseRenderer = m_RenderWindow->GetRenderer();
+
+      mitk::SliceNavigationController *nc = baseRenderer->GetSliceNavigationController();
+      if (nc->GetCurrentPlaneGeometry())
+      {
+        oldPosition = nc->GetCurrentPlaneGeometry()->GetCenter();
+        oldPositionDefined = true;
+      }
+      nc->SetViewDirection( mitk::SliceNavigationController::Original );
+
+      mitk::DICOMSeries::MutexLocker locker( series->GetHighPriorityLock() );
+      MITK_INFO << "Init to object";
+      nc->SetInputWorldGeometry( node->GetData()->GetGeometry()->Clone() );
+    }
+  }
+  else
+  {
+    mitk::BaseRenderer* baseRenderer = m_RenderWindow->GetRenderer();
+    mitk::SliceNavigationController *nc = baseRenderer->GetSliceNavigationController();
+    nc->SetViewDirectionToDefault();
+    MITK_INFO << "Init to world";
+    mitk::TimeSlicedGeometry::Pointer worldGeometry = m_DataStorage->ComputeBoundingGeometry3D( m_DataStorage->GetAll() );
+    nc->SetInputWorldGeometry( worldGeometry );
+  }
+  mitk::BaseRenderer* baseRenderer = m_RenderWindow->GetRenderer();
+  mitk::SliceNavigationController *nc = baseRenderer->GetSliceNavigationController();
   nc->Update();
 
-  nc->GetSlice()->SetPos( nc->GetSlice()->GetSteps() / 2 );
+  if (oldPositionDefined)
+  {
+    nc->SelectSliceByPoint( oldPosition );
+  }
+  else
+  {
+    nc->GetSlice()->SetPos( nc->GetSlice()->GetSteps() / 2 );
+  }
 
   // Fit the render window DisplayGeometry
   baseRenderer->GetDisplayGeometry()->Fit();
 
   // Make sure the slice keeps moving
   nc->GetSlice()->SetAutoRepeat( true );
+
+  mitk::RenderingManager::GetInstance()->RequestUpdateAll();
+
+/*
+  MITK_INFO << "-------------- World geometry -----------";
+//  worldGeometry->Print(std::cout);
+  MITK_INFO << "-------------- Current render geometry 2D -----------";
+  baseRenderer->GetCurrentWorldGeometry2D()->Print(std::cout);
+  MITK_INFO << "-------------- Current display geometry -----------";
+  baseRenderer->GetDisplayGeometry()->Print(std::cout);
+  MITK_INFO << "-------------- end -----------";
+*/
+}
+
+void QmitkDicomView::GoToNextSlice()
+{
+  mitk::BaseRenderer* baseRenderer = m_RenderWindow->GetRenderer();
+  mitk::SliceNavigationController *nc = baseRenderer->GetSliceNavigationController();
+  nc->GetSlice()->Next();
+
+  MITK_INFO << "NOW AT SLICE " << nc->GetSlice()->GetPos()+1 << " of " << nc->GetSlice()->GetSteps();
+  MITK_INFO << "-------------- Current render geometry 2D -----------";
+  baseRenderer->GetCurrentWorldGeometry2D()->Print(std::cout);
+  MITK_INFO << "-------------- end -----------";
+}
+
+void QmitkDicomView::GoToPreviousSlice()
+{
+  mitk::BaseRenderer* baseRenderer = m_RenderWindow->GetRenderer();
+  mitk::SliceNavigationController *nc = baseRenderer->GetSliceNavigationController();
+  nc->GetSlice()->Previous();
+
+  MITK_INFO << "NOW AT SLICE " << nc->GetSlice()->GetPos()+1 << " of " << nc->GetSlice()->GetSteps();
+  MITK_INFO << "-------------- Current render geometry 2D -----------";
+  baseRenderer->GetCurrentWorldGeometry2D()->Print(std::cout);
+  MITK_INFO << "-------------- end -----------";
 }

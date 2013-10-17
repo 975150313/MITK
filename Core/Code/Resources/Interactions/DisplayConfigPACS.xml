@@ -47,6 +47,12 @@
   <event_variant class="MouseMoveEvent" name="Scrolling">
     <attribute name="ButtonState" value="MiddleMouseButton"/>
   </event_variant>
+  <event_variant class="MouseWheelEvent" name="PlaneUP">
+    <attribute name="ScrollDirection" value="up"/>
+  </event_variant>
+  <event_variant class="MouseWheelEvent" name="PlaneDown">
+    <attribute name="ScrollDirection" value="down"/>
+  </event_variant>
    <!-- LevelWindow -->
   <event_variant class="MousePressEvent" name="StartAdjustLevelWindow">
     <attribute name="EventButton" value="RightMouseButton"/>

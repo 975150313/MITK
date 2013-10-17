@@ -115,6 +115,8 @@ public:
                 numberOfDimensions = 2;
                 dimensions[0] = dimX;
                 dimensions[1] = dimY;
+                dimensions[2] = 1;
+                dimensions[3] = 1;
                 bufferSize = dimX*dimY;
             }
             else
@@ -123,6 +125,7 @@ public:
                 dimensions[0] = dimX;
                 dimensions[1] = dimY;
                 dimensions[2] = dimZ;
+                dimensions[3] = 1;
                 bufferSize = dimX*dimY*dimZ;
             }
         }

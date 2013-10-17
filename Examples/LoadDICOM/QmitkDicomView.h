@@ -33,6 +33,19 @@ namespace Ui
 
 class QmitkRenderWindow;
 
+class QmitkDicomViewUpdateEvent : public QEvent
+{
+public:
+  enum Type
+  {
+    Modified = QEvent::MaxUser - 42
+  };
+
+  QmitkDicomViewUpdateEvent()
+  : QEvent( (QEvent::Type) Modified ) {};
+};
+
+
 
 class QmitkDicomView : public QWidget
 {
@@ -46,24 +59,33 @@ class QmitkDicomView : public QWidget
   signals:
 
     void SignalProgressFromReaderThread();
+    void SignalModifiedFromReaderThread();
 
   public slots:
 
     void ReceiveProgressFromReaderThread();
+    void ReceiveModifiedFromReaderThread();
 
   protected slots:
 
     void LoadDICOMFiles();
     void LoadSomething();
     void FirstSeriesLoadingResultAvailable();
+    void UpdateToModifiedSeries();
     void SeriesLoadingCompleted();
+
+    void GoToNextSlice();
+    void GoToPreviousSlice();
 
     // callback
     void ReportProgressFromReader();
+    void ProcessModifiedDataNode();
 
-    void ReinitViewToContainEverything();
+    void ReinitViewToContainEverything(mitk::DataNode* node = NULL, bool really = false);
 
   protected:
+
+    bool event( QEvent *event );
 
     void SetupRendering();
 
@@ -72,11 +94,13 @@ class QmitkDicomView : public QWidget
     mitk::DICOMSeriesReader::Pointer m_Reader;
 
     mitk::DataStorage::Pointer m_DataStorage;
+    mitk::DataNode::Pointer m_DataNode;
     mitk::RenderingManager::Pointer m_RenderingManager;
     QmitkRenderWindow* m_RenderWindow;
     mitk::DisplayInteractor::Pointer m_Scroller;
 
     unsigned long m_ProgressCallback;
+    unsigned long m_ModifiedCallback;
 };
 
 #endif

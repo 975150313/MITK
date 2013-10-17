@@ -16,22 +16,48 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkDICOMImageReader.h"
 
-#include "gdcmImageReader.h"
+#include "mitkImageGenerator.h"
 
-#include "dcfilefo.h"
-#include "dcdatset.h"
-#include "dcmimage.h"
-#include "dcdeftag.h"
+#include <itkGDCMImageIO.h>
+#include <itkImageSeriesReader.h>
+#include <itkMutexLockHolder.h>
+
+#include <gdcmImageReader.h>
+
+#include <dcfilefo.h>
+#include <dcdatset.h>
+#include <dcmimage.h>
+#include <dcdeftag.h>
+
+/*
+
+  TODO: make sure we don't trigger any levelwindow.SetAuto() or detect-binary in mitk::Image.
+        These functions cost a LOT of time and don't add value. We can
+         - exclude binary, doesn't have meaning for our images
+         - read level / window from dicom tags
+
+
+*/
 
 class mitk::DICOMImageReaderImplementation
 {
   public:
+
+    typedef itk::SimpleMutexLock MutexType;
+    typedef itk::MutexLockHolder<MutexType> MutexLocker;
+
+    static MutexType m_Lock;
 
     std::string m_Filename;
     DICOMImageReader::DICOMImageList m_Outputs;
     PlaneGeometry::Pointer m_ImagePlane;
 
     void ProcessFileGDCM(const std::string& filename);
+
+    template <typename PixelType>
+    void ProcessTypedFileGDCM(const std::string& filename);
+
+    PlaneGeometry::Pointer CreatePlaneGeometryGDCM( const std::string& filename );
 
     void ProcessFileDCMTK(const std::string& filename);
     DICOMImage::Pointer ReadFrameFromFileDCMTK(DcmDataset* dicomDataset, unsigned long frame);
@@ -48,6 +74,9 @@ class mitk::DICOMImageReaderImplementation
 
     PlaneGeometry::Pointer GetImagePlaneGeometry( Image* mitkImage );
 };
+
+mitk::DICOMImageReaderImplementation::MutexType mitk::DICOMImageReaderImplementation::m_Lock; // need to define
+
 
 
 mitk::DICOMImageReader
@@ -98,8 +127,8 @@ mitk::DICOMImageReader
 
   // TODO check validness!
 
-  //p->ProcessFileGDCM( p->m_Filename );
-  p->ProcessFileDCMTK( p->m_Filename );
+  p->ProcessFileGDCM( p->m_Filename );
+  //p->ProcessFileDCMTK( p->m_Filename );
 
   // read (multiple) mitk::Image(s) from file
   //   with plane geometry
@@ -132,11 +161,172 @@ void
 mitk::DICOMImageReaderImplementation
 ::ProcessFileGDCM(const std::string& filename)
 {
+  MutexLocker lock(this->m_Lock); // TODO hmm, this is NOT ideal...
+
+  typedef itk::GDCMImageIO IOType;
+  typename IOType::Pointer io = IOType::New();
+
+  if ( io->CanReadFile( filename.c_str() ) )
+  {
+    io->SetFileName( filename.c_str());
+    io->ReadImageInformation();
+    if (io->GetPixelType() == itk::ImageIOBase::SCALAR)
+    {
+      switch (io->GetComponentType())
+      {
+        case IOType::UCHAR:  ProcessTypedFileGDCM<unsigned char>(filename); break;
+        case IOType::CHAR:   ProcessTypedFileGDCM<char>(filename); break;
+        case IOType::USHORT: ProcessTypedFileGDCM<unsigned short>(filename); break;
+        case IOType::SHORT:  ProcessTypedFileGDCM<short>(filename); break;
+        case IOType::UINT:   ProcessTypedFileGDCM<unsigned int>(filename); break;
+        case IOType::INT:    ProcessTypedFileGDCM<int>(filename); break;
+        case IOType::ULONG:  ProcessTypedFileGDCM<long unsigned int>(filename); break;
+        case IOType::LONG:   ProcessTypedFileGDCM<long int>(filename); break;
+        case IOType::FLOAT:  ProcessTypedFileGDCM<float>(filename); break;
+        case IOType::DOUBLE: ProcessTypedFileGDCM<double>(filename); break;
+        default:
+          MITK_ERROR << "Found unsupported DICOM scalar pixel type: (enum value) " << io->GetComponentType();
+      }
+    }
+    else if (io->GetPixelType() == itk::ImageIOBase::RGB)
+    {
+      switch (io->GetComponentType())
+      {
+        case IOType::UCHAR:  ProcessTypedFileGDCM<itk::RGBPixel<unsigned char> >( filename ); break;
+        case IOType::CHAR:   ProcessTypedFileGDCM<itk::RGBPixel<char> >( filename ); break;
+        case IOType::USHORT: ProcessTypedFileGDCM<itk::RGBPixel<unsigned short> >( filename ); break;
+        case IOType::SHORT:  ProcessTypedFileGDCM<itk::RGBPixel<short> >( filename ); break;
+        case IOType::UINT:   ProcessTypedFileGDCM<itk::RGBPixel<unsigned int> >( filename ); break;
+        case IOType::INT:    ProcessTypedFileGDCM<itk::RGBPixel<int> >( filename ); break;
+        case IOType::ULONG:  ProcessTypedFileGDCM<itk::RGBPixel<long unsigned int> >( filename ); break;
+        case IOType::LONG:   ProcessTypedFileGDCM<itk::RGBPixel<long int> >( filename ); break;
+        case IOType::FLOAT:  ProcessTypedFileGDCM<itk::RGBPixel<float> >( filename ); break;
+        case IOType::DOUBLE: ProcessTypedFileGDCM<itk::RGBPixel<double> >( filename ); break;
+        default:
+          MITK_ERROR << "Found unsupported DICOM scalar pixel type: (enum value) " << io->GetComponentType();
+      }
+    }
+    else
+    {
+      MITK_ERROR << "Found unsupported DICOM pixel type: (enum value) " << io->GetPixelType();
+    }
+  }
+  else
+  {
+    MITK_ERROR << "GDCM cannot read file " << filename;
+  }
+}
+
+template <typename PixelType>
+void
+mitk::DICOMImageReaderImplementation
+::ProcessTypedFileGDCM(const std::string& filename)
+{
+  typedef itk::Image<PixelType, 3> ImageType; // expect 3D
+  typedef itk::ImageSeriesReader<ImageType> ReaderType;
+  typedef itk::GDCMImageIO IOType;
+
+  typename IOType::Pointer io = IOType::New();
+  typename ReaderType::Pointer reader = ReaderType::New();
+  reader->SetImageIO(io);
+  reader->ReverseOrderOff();
+
+  reader->SetFileName(filename);
+
+  try
+  {
+    reader->Update();
+  }
+  catch( std::exception& e )
+  {
+    // TODO some error handling?
+    MITK_ERROR << "ITK exception while reading file " << filename << ": " << e.what();
+  }
+
+  typename ImageType::Pointer readVolume = reader->GetOutput();
+  readVolume->DisconnectPipeline();
+
+  /*
+  // if we detected that the images are from a tilted gantry acquisition, we need to push some pixels into the right position
+  if (correctTilt)
+  {
+    readVolume = InPlaceFixUpTiltedGeometry( reader->GetOutput(), tiltInfo ); // TODO only possible with multi-frame and that is probably NOT supported by gdcm at the moment
+  }
+  */
+
+  Image::Pointer mitkImage = Image::New();
+  mitkImage->InitializeByItk( readVolume.GetPointer() );
+  mitkImage->SetImportVolume( readVolume->GetBufferPointer() );
+
+  DICOMImage::Pointer dicomImage = DICOMImage::New();
+  dicomImage->SetPixelDataContainer( mitkImage );
+
+  /*
+  PlaneGeometry::Pointer planeGeometry = dynamic_cast<PlaneGeometry*>( mitkImage->GetGeometry() );
+  MITK_INFO << "Plane geometry " << (void*) planeGeometry.GetPointer();
+  dicomImage->SetImagePlane( planeGeometry );
+  */
+  PlaneGeometry::Pointer planeGeometry = this->CreatePlaneGeometryGDCM( filename );
+  dicomImage->SetImagePlane( planeGeometry );
+
+  this->m_Outputs.push_back( dicomImage );
+}
+
+mitk::PlaneGeometry::Pointer
+mitk::DICOMImageReaderImplementation
+::CreatePlaneGeometryGDCM( const std::string& filename )
+{
   gdcm::ImageReader reader;
   reader.SetFileName( filename.c_str() );
   if ( !reader.Read() )
   {
     // error handling
+    MITK_ERROR << "GDCM unable to read file " << filename << ". Perhaps we can fallback to DCMTK?";
+    return NULL;
+  }
+
+  gdcm::Image& gdcmImage = reader.GetImage();
+
+  // "plane production"
+  unsigned long width = gdcmImage.GetColumns();
+  unsigned long height = gdcmImage.GetRows();
+
+  mitk::Point3D imageOrigin;
+  for (unsigned int d = 0; d < 3; ++d)
+    imageOrigin[d] = gdcmImage.GetOrigin(d);
+
+  mitk::Vector3D imageOrientationX;
+  mitk::Vector3D imageOrientationY;
+
+  for (unsigned int d = 0; d < 3; ++d)
+    imageOrientationX[d] = gdcmImage.GetDirectionCosines(d);
+  for (unsigned int d = 0; d < 3; ++d)
+    imageOrientationY[d] = gdcmImage.GetDirectionCosines(d+3); // +3 ! direction cosine is a 6-tuple in GDCM (as in DICOM)
+
+  mitk::Vector3D mitkSpacing;
+  for (unsigned int d = 0; d < 3; ++d)
+    mitkSpacing[d] = gdcmImage.GetSpacing(d); // TODO: check what is done here for d==2 exactly (1 for undefined, but what happens with simple multi-frames?)
+
+  //InitializeStandardPlane(rightVector, downVector, spacing)
+  mitk::PlaneGeometry::Pointer planeGeometry = mitk::PlaneGeometry::New();
+  planeGeometry->InitializeStandardPlane( width, height, imageOrientationX, imageOrientationY, &mitkSpacing);
+  planeGeometry->ChangeImageGeometryConsideringOriginOffset(true);
+  planeGeometry->SetOrigin(imageOrigin);
+
+  return planeGeometry;
+}
+
+/*
+void
+mitk::DICOMImageReaderImplementation
+::ProcessFileGDCM(const std::string& filename)
+{
+  gdcm::ImageReader reader;
+  reader.SetFileName( filename.c_str() );
+  if ( !reader.Read() )
+  {
+    // error handling
+    MITK_ERROR << "GDCM unable to read file " << filename << ". Perhaps we can fallback to DCMTK?";
     return;
   }
 
@@ -144,21 +334,52 @@ mitk::DICOMImageReaderImplementation
 
   std::vector<DICOMImage::Pointer> slices;
 
-  const unsigned int* dimension = gdcmImage.GetDimensions();
+  // "plane production"
+  unsigned long width = dcmtkImage.getColumns();
+  unsigned long height = dcmtkImage.getRows();
 
-  //unsigned int dimX = dimension[0];
-  //unsigned int dimY = dimension[1];
-  unsigned int dimZ = dimension[2];
+  mitk::Point3D imageOrigin;
+  for (unsigned int d = 0; d < 3; ++d)
+    imageOrigin[d] = gdcmImage.getOrigin(d);
+
+  mitk::Vector3D imageOrientationX;
+  mitk::Vector3D imageOrientationY;
+
+  for (unsigned int d = 0; d < 3; ++d)
+    imageOrientationX[d] = gdcmImage.getDirectionCosines(d);
+  for (unsigned int d = 0; d < 3; ++d)
+    imageOrientationY[d] = gdcmImage.getDirectionCosines(d+3); // +3 ! direction cosine is a 6-tuple in GDCM (as in DICOM)
+
+  mitk::Vector3D mitkSpacing;
+  for (unsigned int d = 0; d < 3; ++d)
+    mitkSpacing[d] = gdcmImage.GetSpacing(d); // TODO: check what is done here for d==2 exactly (1 for undefined, but what happens with simple multi-frames?)
+
+  //InitializeStandardPlane(rightVector, downVector, spacing)
+  mitk::PlaneGeometry::Pointer planeGeometry = mitk::PlaneGeometry::New();
+  planeGeometry->InitializeStandardPlane( width, height, imageOrientationX, imageOrientationY, &mitkSpacing);
+  planeGeometry->ChangeImageGeometryConsideringOriginOffset(true);
+  planeGeometry->SetOrigin(imageOrigin);
+
+  // TODO special multi-frame case required!
+
+
+
 
   for (unsigned int slice = 0; slice < dimZ; ++slice)
   {
     DICOMImage::Pointer dicomImage = DICOMImage::New();
+
+    // TODO this is the goal
+    dicomImage->SetImagePlane( planeGeometry );
+
+    //dicomImage->SetPixelDataContainer( mitkSliceImage );
 
     slices.push_back( dicomImage );
   }
 
   this->m_Outputs.insert( this->m_Outputs.end(), slices.begin(), slices.end());
 }
+*/
 
 void
 mitk::DICOMImageReaderImplementation
@@ -203,6 +424,7 @@ mitk::DICOMImageReaderImplementation
   ::DicomImage dcmtkImage( dicomDataset, dicomDataset->getOriginalXfer(), flags, frame, numberOfFrames );
 
   unsigned long frameCount = dcmtkImage.getFrameCount();
+  MITK_INFO << "Read " << frameCount << " frames out of this file";
   unsigned long width = dcmtkImage.getWidth();
   unsigned long height = dcmtkImage.getHeight();
 
@@ -282,7 +504,7 @@ mitk::DICOMImageReaderImplementation
     sliceThickness = 1.0;
   }
 
-  assert(frameCount == 1);
+  //assert(frameCount == 1); // later! DicomImage seems to be picky
 /*
   MITK_INFO << "Frame " << frame << ": " << sliceThickness << " mm image of "
             << width << "x" << height
@@ -369,7 +591,6 @@ mitk::DICOMImageReaderImplementation
                     Vector3D imageOrientationX,
                     Vector3D imageOrientationY)
 {
-  Image::Pointer mitkImage = Image::New();
   unsigned int numberOfSlices = 1;
 
   mitk::Vector3D mitkSpacing;
@@ -379,12 +600,15 @@ mitk::DICOMImageReaderImplementation
 
   //InitializeStandardPlane(rightVector, downVector, spacing)
   mitk::PlaneGeometry::Pointer planeGeometry = mitk::PlaneGeometry::New();
-  planeGeometry->InitializeStandardPlane( spacing[0] * width, spacing[1] * height, imageOrientationX, imageOrientationY, &mitkSpacing);
+  planeGeometry->InitializeStandardPlane( width, height, imageOrientationX, imageOrientationY, &mitkSpacing);
   planeGeometry->ChangeImageGeometryConsideringOriginOffset(true);
   planeGeometry->SetOrigin(imageOrigin);
 
   // Testing Initialize(const mitk::PixelType& type, const mitk::Geometry3D& geometry, unsigned int slices) with PlaneGeometry and GetData(): ";
-  mitkImage->Initialize( mitk::MakePixelType<int, int, 1>(), *planeGeometry, numberOfSlices );
+  //Image::Pointer mitkImage = Image::New();
+  //mitkImage->Initialize( mitk::MakePixelType<int, int, 1>(), *planeGeometry, numberOfSlices );
+  Image::Pointer mitkImage = ImageGenerator::GenerateRandomImage<int>( width, height, 1, 1, spacing[0], spacing[1], sliceThickness, 2000, -1000 );
+  mitkImage->SetGeometry( planeGeometry );
 
   // TODO pixel data!
 
@@ -397,7 +621,5 @@ mitk::PlaneGeometry::Pointer
 mitk::DICOMImageReaderImplementation
 ::GetImagePlaneGeometry( Image* mitkImage )
 {
-  PlaneGeometry::Pointer plane = PlaneGeometry::New();
-
   return this->m_ImagePlane;
 }

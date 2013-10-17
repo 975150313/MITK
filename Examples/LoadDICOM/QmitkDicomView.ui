@@ -32,7 +32,7 @@ margin: 0.5px;
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,4">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,1">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,1,0,0">
      <item>
       <widget class="QPushButton" name="btnLoadDICOM">
        <property name="text">
@@ -66,6 +66,20 @@ margin: 0.5px;
        </property>
        <property name="format">
         <string>%v / %m files</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnPreviousSlice">
+       <property name="text">
+        <string>&lt;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnNextSlice">
+       <property name="text">
+        <string>&gt;</string>
        </property>
       </widget>
      </item>

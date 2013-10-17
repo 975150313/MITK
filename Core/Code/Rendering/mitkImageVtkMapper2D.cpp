@@ -73,6 +73,7 @@ mitk::ImageVtkMapper2D::~ImageVtkMapper2D()
 //set the two points defining the textured plane according to the dimension and spacing
 void mitk::ImageVtkMapper2D::GeneratePlane(mitk::BaseRenderer* renderer, vtkFloatingPointType planeBounds[6])
 {
+  //MITK_INFO <<"::GeneratePlane()";
   LocalStorage *localStorage = m_LSH.GetLocalStorage(renderer);
 
   float depth = this->CalculateLayerDepth(renderer);
@@ -88,6 +89,7 @@ void mitk::ImageVtkMapper2D::GeneratePlane(mitk::BaseRenderer* renderer, vtkFloa
 
 float mitk::ImageVtkMapper2D::CalculateLayerDepth(mitk::BaseRenderer* renderer)
 {
+  //MITK_INFO <<"::CalculateLayerDepth()";
   //get the clipping range to check how deep into z direction we can render images
   double maxRange = renderer->GetVtkRenderer()->GetActiveCamera()->GetClippingRange()[1];
 
@@ -106,11 +108,13 @@ float mitk::ImageVtkMapper2D::CalculateLayerDepth(mitk::BaseRenderer* renderer)
 
 const mitk::Image* mitk::ImageVtkMapper2D::GetInput( void )
 {
+  //MITK_INFO <<"::GetInput()";
   return static_cast< const mitk::Image * >( GetDataNode()->GetData() );
 }
 
 vtkProp* mitk::ImageVtkMapper2D::GetVtkProp(mitk::BaseRenderer* renderer)
 {
+  //MITK_INFO <<"::GetVtkProp()";
   //return the actor corresponding to the renderer
   return m_LSH.GetLocalStorage(renderer)->m_Actors;
 }
@@ -119,6 +123,7 @@ vtkProp* mitk::ImageVtkMapper2D::GetVtkProp(mitk::BaseRenderer* renderer)
 
 void mitk::ImageVtkMapper2D::GenerateDataForRenderer( mitk::BaseRenderer *renderer )
 {
+  //MITK_INFO <<"::GenerateDataForRenderer()";
   LocalStorage *localStorage = m_LSH.GetLocalStorage(renderer);
 
   mitk::Image *input = const_cast< mitk::Image * >( this->GetInput() );
@@ -131,7 +136,7 @@ void mitk::ImageVtkMapper2D::GenerateDataForRenderer( mitk::BaseRenderer *render
 
   //check if there is a valid worldGeometry
   const Geometry2D *worldGeometry = renderer->GetCurrentWorldGeometry2D();
-  if( ( worldGeometry == NULL ) || ( !worldGeometry->IsValid() ) || ( !worldGeometry->HasReferenceGeometry() ))
+  if( ( worldGeometry == NULL ) || ( !worldGeometry->IsValid() ) )
   {
     return;
   }
@@ -435,6 +440,7 @@ void mitk::ImageVtkMapper2D::GenerateDataForRenderer( mitk::BaseRenderer *render
 
 void mitk::ImageVtkMapper2D::ApplyLevelWindow(mitk::BaseRenderer *renderer)
 {
+  //MITK_INFO <<"::ApplyLevelWindow()";
   LocalStorage *localStorage = this->GetLocalStorage( renderer );
 
   LevelWindow levelWindow;
@@ -458,6 +464,7 @@ void mitk::ImageVtkMapper2D::ApplyLevelWindow(mitk::BaseRenderer *renderer)
 
 void mitk::ImageVtkMapper2D::ApplyColor( mitk::BaseRenderer* renderer )
 {
+  //MITK_INFO <<"::ApplyColor()";
   LocalStorage *localStorage = this->GetLocalStorage( renderer );
 
   float rgb[3]= { 1.0f, 1.0f, 1.0f };
@@ -518,6 +525,7 @@ void mitk::ImageVtkMapper2D::ApplyColor( mitk::BaseRenderer* renderer )
 
 void mitk::ImageVtkMapper2D::ApplyOpacity( mitk::BaseRenderer* renderer )
 {
+  //MITK_INFO <<"::ApplyOpacity()";
   LocalStorage* localStorage = this->GetLocalStorage( renderer );
   float opacity = 1.0f;
   // check for opacity prop and use it for rendering if it exists
@@ -532,6 +540,7 @@ void mitk::ImageVtkMapper2D::ApplyOpacity( mitk::BaseRenderer* renderer )
 
 void mitk::ImageVtkMapper2D::ApplyRenderingMode( mitk::BaseRenderer* renderer )
 {
+  //MITK_INFO <<"::ApplyRenderingMode()";
   LocalStorage* localStorage = m_LSH.GetLocalStorage(renderer);
 
   bool binary = false;
@@ -587,6 +596,7 @@ void mitk::ImageVtkMapper2D::ApplyRenderingMode( mitk::BaseRenderer* renderer )
 
 void mitk::ImageVtkMapper2D::ApplyLookuptable( mitk::BaseRenderer* renderer )
 {
+  //MITK_INFO <<"::ApplyLookuptable()";
   LocalStorage* localStorage = m_LSH.GetLocalStorage(renderer);
   vtkLookupTable* usedLookupTable = localStorage->m_ColorLookupTable;
 
@@ -606,6 +616,7 @@ void mitk::ImageVtkMapper2D::ApplyLookuptable( mitk::BaseRenderer* renderer )
 
 void mitk::ImageVtkMapper2D::ApplyColorTransferFunction(mitk::BaseRenderer *renderer)
 {
+  //MITK_INFO <<"::ApplyColorTransferFunction()";
   mitk::TransferFunctionProperty::Pointer transferFunctionProp = dynamic_cast<mitk::TransferFunctionProperty*>(this->GetDataNode()->GetProperty("Image Rendering.Transfer Function",renderer ));
 
   if( transferFunctionProp.IsNull() )
@@ -620,6 +631,7 @@ void mitk::ImageVtkMapper2D::ApplyColorTransferFunction(mitk::BaseRenderer *rend
 
 void mitk::ImageVtkMapper2D::Update(mitk::BaseRenderer* renderer)
 {
+  //MITK_INFO <<"::Update()";
 
   bool visible = true;
   GetDataNode()->GetVisibility(visible, renderer, "visible");
@@ -669,6 +681,7 @@ void mitk::ImageVtkMapper2D::Update(mitk::BaseRenderer* renderer)
 
 void mitk::ImageVtkMapper2D::SetDefaultProperties(mitk::DataNode* node, mitk::BaseRenderer* renderer, bool overwrite)
 {
+  //MITK_INFO <<"::SetDefaultProperties()";
   mitk::Image::Pointer image = dynamic_cast<mitk::Image*>(node->GetData());
 
   // Properties common for both images and segmentations
@@ -838,6 +851,7 @@ mitk::ImageVtkMapper2D::LocalStorage* mitk::ImageVtkMapper2D::GetLocalStorage(mi
 }
 
 vtkSmartPointer<vtkPolyData> mitk::ImageVtkMapper2D::CreateOutlinePolyData(mitk::BaseRenderer* renderer ){
+  //MITK_INFO <<"::CreateOutlinePolyData()";
   LocalStorage* localStorage = this->GetLocalStorage(renderer);
 
   //get the min and max index values of each direction
@@ -982,6 +996,7 @@ vtkSmartPointer<vtkPolyData> mitk::ImageVtkMapper2D::CreateOutlinePolyData(mitk:
 
 void mitk::ImageVtkMapper2D::TransformActor(mitk::BaseRenderer* renderer)
 {
+  //MITK_INFO <<"::TransformActor()";
   LocalStorage *localStorage = m_LSH.GetLocalStorage(renderer);
   //get the transformation matrix of the reslicer in order to render the slice as axial, coronal or saggital
   vtkSmartPointer<vtkTransform> trans = vtkSmartPointer<vtkTransform>::New();
@@ -1002,6 +1017,7 @@ void mitk::ImageVtkMapper2D::TransformActor(mitk::BaseRenderer* renderer)
 
 bool mitk::ImageVtkMapper2D::RenderingGeometryIntersectsImage( const Geometry2D* renderingGeometry, SlicedGeometry3D* imageGeometry )
 {
+  //MITK_INFO <<"::RenderingGeometryIntersectsImage()";
   // if either one of the two geometries is NULL we return true
   // for safety reasons
   if ( renderingGeometry == NULL || imageGeometry == NULL )

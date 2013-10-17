@@ -44,6 +44,7 @@ class mitkDICOM_EXPORT DICOMSeriesMapperVtk2D : public VtkMapper
     virtual vtkProp* GetVtkProp(mitk::BaseRenderer*);
 
     virtual void Update(mitk::BaseRenderer* renderer);
+    virtual void KAPUTTUpdateVtkTransform(mitk::BaseRenderer* renderer);
 
   protected:
 

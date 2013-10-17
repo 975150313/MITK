@@ -18,6 +18,8 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkLocalStorageHandler.h"
 
+#include "mitkImageVtkMapper2D.h"
+
 #include <vtkSmartPointer.h>
 #include <vtkPropAssembly.h>
 #include <vtkPolyData.h>
@@ -30,10 +32,10 @@ class mitk::DICOMSeriesMapperVtk2DImplementation
   {
     public:
 
-      vtkSmartPointer<vtkActor> m_EmptyActor;
       vtkSmartPointer<vtkPropAssembly> m_Actors;
-      vtkSmartPointer<vtkPolyData> m_EmptyPolyData;
-      vtkSmartPointer<vtkPolyDataMapper> m_Mapper;
+
+      typedef std::map<Image*, DataNode::Pointer> ImageNodeContainer;
+      ImageNodeContainer m_ImageNode;
 
       itk::TimeStamp m_LastUpdateTime;
 
@@ -44,7 +46,11 @@ class mitk::DICOMSeriesMapperVtk2DImplementation
   DICOMSeriesMapperVtk2DImplementation(DICOMSeriesMapperVtk2D* object):m_Object(object){}
   DICOMSeriesMapperVtk2D* m_Object;
 
+  /// Create/Update image mapper list
   void UpdateImageMapperList( BaseRenderer* renderer );
+
+  /// Update all existing image mappers
+  void UpdateImageMappers( BaseRenderer* renderer );
 
   LocalStorageHandler<LocalStorage> m_LSH;
 };
@@ -52,16 +58,7 @@ class mitk::DICOMSeriesMapperVtk2DImplementation
 mitk::DICOMSeriesMapperVtk2DImplementation::LocalStorage
 ::LocalStorage()
 {
-  m_EmptyPolyData = vtkSmartPointer<vtkPolyData>::New();
-
-  m_Mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-  m_Mapper->SetInput( m_EmptyPolyData );
-
-  m_EmptyActor = vtkSmartPointer<vtkActor>::New();
-  m_EmptyActor->SetMapper( m_Mapper );
-
   m_Actors = vtkSmartPointer<vtkPropAssembly>::New();
-  m_Actors->AddPart( m_EmptyActor );
 }
 
 mitk::DICOMSeriesMapperVtk2DImplementation::LocalStorage
@@ -106,8 +103,23 @@ vtkProp*
 mitk::DICOMSeriesMapperVtk2D
 ::GetVtkProp(mitk::BaseRenderer* renderer)
 {
+    DICOMSeriesMapperVtk2DImplementation::LocalStorage* localStorage = p->m_LSH.GetLocalStorage(renderer);
+/*
+    for (DICOMSeriesMapperVtk2DImplementation::LocalStorage::ImageNodeContainer::iterator iter = localStorage->m_ImageNode.begin();
+         iter != localStorage->m_ImageNode.end();
+         ++iter)
+    {
+      // unless we know that image already, create/use an image mapper for it
+      DataNode::Pointer node = iter->second;
+      ImageVtkMapper2D* mapper = static_cast<ImageVtkMapper2D*>( node->GetMapper( BaseRenderer::Standard2D ) );
+
+      vtkProp* prop = mapper->GetVtkProp( renderer );
+      return prop;
+  }
+*/
+
   //return the actor corresponding to the renderer
-  return p->m_LSH.GetLocalStorage(renderer)->m_Actors;
+  return localStorage->m_Actors;
 }
 
 const mitk::DICOMSeries*
@@ -132,12 +144,14 @@ mitk::DICOMSeriesMapperVtk2D
   DICOMSeries* data  = const_cast<DICOMSeries *>( this->GetInput() );
   if ( !data ) return;
 
+  DICOMSeries::MutexLocker locker( data->GetHighPriorityLock() );
+
   // Calculate time step of the input data for the specified renderer (integer value)
   this->CalculateTimeStep( renderer );
 
   // Check if time step is valid
   const TimeSlicedGeometry *dataTimeGeometry = data->GetTimeSlicedGeometry();
-  if ( ( dataTimeGeometry == NULL )
+    if ( ( dataTimeGeometry == NULL )
        || ( dataTimeGeometry->GetTimeSteps() == 0 )
        || ( !dataTimeGeometry->IsValidTime( this->GetTimestep() ) ) )
   {
@@ -164,6 +178,39 @@ mitk::DICOMSeriesMapperVtk2D
   localStorage->m_LastUpdateTime.Modified();
 }
 
+void
+mitk::DICOMSeriesMapperVtk2D
+::KAPUTTUpdateVtkTransform(mitk::BaseRenderer* renderer)
+{
+  MITK_INFO << "::UpdateVtkTransform()";
+  vtkLinearTransform * vtktransform = this->GetDataNode()->GetVtkTransform(this->GetTimestep());
+  if (vtktransform)
+  {
+    vtktransform->Print(std::cout);
+  }
+  else
+  {
+    MITK_INFO << "NO transform";
+  }
+  vtkProp3D *prop = dynamic_cast<vtkProp3D*>( GetVtkProp(renderer) );
+  if(prop)
+  {
+    MITK_INFO << "::  got prop 3D with transform ";
+    prop->SetUserTransform(vtktransform);
+
+    DICOMSeriesMapperVtk2DImplementation::LocalStorage* localStorage = p->m_LSH.GetLocalStorage(renderer);
+    if ( localStorage->m_Actors->GetNumberOfPaths() > 1 )
+    {
+      vtkActor* secondaryActor = dynamic_cast<vtkActor*>( localStorage->m_Actors->GetParts()->GetItemAsObject(0) );
+      secondaryActor->SetUserTransform(vtktransform);
+    }
+  }
+  else
+  {
+    MITK_INFO << "::  got NO prop 3D";
+  }
+}
+
 
 void
 mitk::DICOMSeriesMapperVtk2D
@@ -177,14 +224,24 @@ mitk::DICOMSeriesMapperVtk2D
 
   //check if there is a valid worldGeometry
   const Geometry2D* worldGeometry = renderer->GetCurrentWorldGeometry2D();
-  if( !worldGeometry || !worldGeometry->IsValid() || !worldGeometry->HasReferenceGeometry() )
+  if( !worldGeometry || !worldGeometry->IsValid() )
   {
     return;
   }
 
+  // input must be updated (e.g. geometries exist etc.)
   input->Update();
 
-  p->UpdateImageMapperList( renderer );
+  // assert one mapper per mitk::Image behind the DICOMImages
+  if ( input->GetMTime() > localStorage->m_LastUpdateTime )
+  {
+    MITK_INFO << "Update of mappers neccessary!";
+    p->UpdateImageMapperList( renderer );
+  }
+
+  // update the mitk::Image mappers
+  p->UpdateImageMappers( renderer );
+
   /*
      GenerateDataForRenderer in ImageVtkMapper2D does:
 
@@ -208,11 +265,93 @@ mitk::DICOMSeriesMapperVtk2DImplementation
   DICOMSeriesMapperVtk2DImplementation::LocalStorage* localStorage = this->m_LSH.GetLocalStorage(renderer);
   DICOMSeries* inputSeries = const_cast<DICOMSeries*>( m_Object->GetInput() );
 
-  MITK_INFO << "UpdateImageMapperList(!)";
+  MITK_INFO << "UpdateImageMapperList()";
+
+  DICOMSeries::ConstDICOMImageList allDICOMImages = inputSeries->GetAllDICOMImages();
 
   //const Geometry2D* worldGeometry = renderer->GetCurrentWorldGeometry2D();
+  // TODO remove useless, deactivate unused mappers!
+//  localStorage->m_ImageNode.clear();
 
-//  DICOMSeries::ConstDICOMImageList allDICOMImages = inputSeries->GetAllDICOMImages();
 
-  //localStorage->m_Actors->AddPart( imageMapperActor );
+  /**
+
+    TODO TODO TODO
+
+    Try something like read-write locks or priorities! rendering must get quick access, image readers should wait if necessary!
+
+    Read/Write-Lock could solve the problem:
+
+    Rendering requests write lock
+    Loaders request read locks
+
+    Requesting the write lock must
+      - wait for all reader locks to be returned
+      - block all further release of reader locks (write has priority)
+
+
+  */
+
+  for (DICOMSeries::ConstDICOMImageList::iterator iter = allDICOMImages.begin();
+       iter != allDICOMImages.end();
+       ++iter)
+  {
+    // unless we know that image already, create/use an image mapper for it
+    const DICOMImage* dicomImage = *iter;
+    Image* mitkImage = dicomImage->GetPixelDataContainer();
+
+    DataNode::Pointer& node = localStorage->m_ImageNode[ mitkImage ];
+    if ( !node )
+    {
+      node = DataNode::New();
+      node->SetData( mitkImage );
+      /*
+      MITK_INFO << "Created node[mitkImage] = " << (void*) localStorage->m_ImageNode[ mitkImage ].GetPointer();
+      MITK_INFO << "  Has mapper = " << (void*) localStorage->m_ImageNode[ mitkImage ]->GetMapper( BaseRenderer::Standard2D );
+      */
+
+      VtkMapper* mapper = static_cast<VtkMapper*>( node->GetMapper( BaseRenderer::Standard2D ) );
+
+      vtkProp* imageProp = mapper->GetVtkProp( renderer );
+      //MITK_INFO << "  mapper has prop = " << (void*) imageProp;
+      //imageProp->Print(std::cout);
+      localStorage->m_Actors->AddPart( imageProp );
+    }
+  }
+}
+
+void
+mitk::DICOMSeriesMapperVtk2DImplementation
+::UpdateImageMappers( BaseRenderer* renderer )
+{
+  DICOMSeriesMapperVtk2DImplementation::LocalStorage* localStorage = this->m_LSH.GetLocalStorage(renderer);
+  DICOMSeries* inputSeries = const_cast<DICOMSeries*>( m_Object->GetInput() );
+
+  //MITK_INFO << "UpdateImageMappers():";
+
+  for (LocalStorage::ImageNodeContainer::iterator iter = localStorage->m_ImageNode.begin();
+       iter != localStorage->m_ImageNode.end();
+       ++iter)
+  {
+    //std::cout << "." << std::flush;
+    // unless we know that image already, create/use an image mapper for it
+    DataNode::Pointer node = iter->second;
+    ImageVtkMapper2D* mapper = static_cast<ImageVtkMapper2D*>( node->GetMapper( BaseRenderer::Standard2D ) );
+
+    // ! this is what VtkPropRenderer does
+    mapper->Update( renderer );
+    mapper->UpdateVtkTransform( renderer );
+
+    vtkProp* prop = mapper->GetVtkProp( renderer );
+    assert(prop);
+    vtkProp3D* imageProp = dynamic_cast<vtkProp3D*>(mapper->GetVtkProp( renderer ));
+   // assert(imageProp);
+    if (imageProp)
+    {
+      double* origin = imageProp->GetOrigin();
+      MITK_INFO << "UPDATE: mapper has prop = " << (void*) imageProp << " with origin " << origin[0] << "," << origin[1] << "," << origin[2];
+    }
+  }
+
+  //std::cout << std::endl;
 }

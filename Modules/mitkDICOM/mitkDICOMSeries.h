@@ -21,8 +21,17 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkBaseData.h"
 
+#include <itkMutexLockHolder.h>
+
 namespace mitk
 {
+
+class Lockable
+{
+  public:
+    virtual void Lock() = 0;
+    virtual void Unlock() = 0;
+};
 
 class DICOMSeriesImplementation;
 
@@ -39,9 +48,15 @@ class mitkDICOM_EXPORT DICOMSeries : public BaseData
     typedef std::vector<DICOMImage::Pointer> DICOMImageList;
     typedef std::vector<DICOMImage::ConstPointer> ConstDICOMImageList;
 
+    typedef Lockable MutexType;
+    typedef itk::MutexLockHolder<MutexType> MutexLocker;
+
     mitkClassMacro( DICOMSeries, BaseData )
     itkNewMacro( DICOMSeries );
     mitkCloneMacro( DICOMSeries );
+
+    MutexType& GetHighPriorityLock() const;
+    MutexType& GetLock() const;
 
     void AddDICOMImage( DICOMImage::Pointer image );
     unsigned int GetNumberOfDICOMImages() const;

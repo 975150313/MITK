@@ -42,7 +42,6 @@ bool mitk::VtkMapper::IsVtkBased() const
 
 void mitk::VtkMapper::MitkRenderOverlay(BaseRenderer* renderer)
 {
-
   bool visible = true;
   GetDataNode()->GetVisibility(visible, renderer, "visible");
   if ( !visible) return;
@@ -53,14 +52,38 @@ void mitk::VtkMapper::MitkRenderOverlay(BaseRenderer* renderer)
   }
 }
 
+#include "vtkPropAssembly.h"
+#include "vtkCollection.h"
+
+void PrintProp(vtkProp* prop, const std::string& indent = "")
+{
+  return;
+  if (!prop)
+  {
+    MITK_INFO << indent << "NULL";
+    return;
+  }
+  MITK_INFO << indent << "Classname: " << prop->GetClassName();
+  vtkPropAssembly* a = dynamic_cast<vtkPropAssembly*>(prop);
+  if (a)
+  {
+    vtkPropCollection* c = a->GetParts();
+    MITK_INFO << indent << c->GetNumberOfItems() << " items in assembly:";
+    for (int i = 0; i < c->GetNumberOfItems(); ++i)
+    {
+      vtkObject* o = c->GetItemAsObject(i);
+      vtkProp* p = dynamic_cast<vtkProp*>(o);
+      MITK_INFO << indent << "Item " << i << ":";
+      PrintProp(p, indent + "  ");
+    }
+  }
+}
+
 void mitk::VtkMapper::MitkRenderOpaqueGeometry(BaseRenderer* renderer)
 {
   bool visible = true;
-
   GetDataNode()->GetVisibility(visible, renderer, "visible");
   if ( !visible) return;
-
-  if ( !this->GetVtkProp(renderer) ) return;
 
   if ( this->GetVtkProp(renderer)->GetVisibility() )
   {

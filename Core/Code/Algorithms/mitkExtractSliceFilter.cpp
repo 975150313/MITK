@@ -472,8 +472,14 @@ bool mitk::ExtractSliceFilter::GetClippedPlaneBounds(vtkFloatingPointType bounds
   if(!m_WorldGeometry || !this->GetInput())
     return false;
 
-  return this->GetClippedPlaneBounds(m_WorldGeometry->GetReferenceGeometry(), dynamic_cast< const PlaneGeometry * >( m_WorldGeometry ), bounds);
-
+  if ( m_WorldGeometry->GetReferenceGeometry() != NULL )
+  {
+    return this->GetClippedPlaneBounds(m_WorldGeometry->GetReferenceGeometry(), dynamic_cast< const PlaneGeometry * >( m_WorldGeometry ), bounds);
+  }
+  else
+  {
+    return this->GetClippedPlaneBounds(m_WorldGeometry, dynamic_cast< const PlaneGeometry * >( m_WorldGeometry ), bounds); // nop operation?
+  }
 }
 
 

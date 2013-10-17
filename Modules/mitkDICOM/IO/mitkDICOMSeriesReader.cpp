@@ -198,7 +198,7 @@ mitk::DICOMSeriesReader
 
   // TODO: check that no old loading thread is still running (or that it can continue safely!)
   p->m_Threader = itk::MultiThreader::New();
-  unsigned int numberOfThreads(4); // TODO check how much is good for I/O
+  unsigned int numberOfThreads(5); // TODO check how much is good for I/O
   for (unsigned int threadIdx = 0; threadIdx < numberOfThreads; ++threadIdx)
   {
     int threadID = p->m_Threader->SpawnThread( mitk::DICOMSeriesReaderImplementation::FileLoader, p );

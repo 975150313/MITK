@@ -64,8 +64,8 @@ mitk::SlicedGeometry3D::SlicedGeometry3D(const SlicedGeometry3D& other)
       }
       else
       {
-        Geometry2D* geometry2D = other.m_Geometry2Ds[0]->Clone();
-        assert(geometry2D!=NULL);
+        Geometry2D::Pointer geometry2D = other.m_Geometry2Ds[s]->Clone();
+        assert( geometry2D.IsNotNull() );
         SetGeometry2D(geometry2D, s);
       }
     }
@@ -689,14 +689,23 @@ mitk::SlicedGeometry3D::PrintSelf( std::ostream& os, itk::Indent indent ) const
   os << indent << " Slices: " << m_Slices << std::endl;
 
   os << std::endl;
-  os << indent << " GetGeometry2D(0): ";
-  if ( this->GetGeometry2D(0) == NULL )
+
+  for (unsigned int s = 0; s < m_Slices; ++s)
   {
-    os << "NULL" << std::endl;
-  }
-  else
-  {
-    this->GetGeometry2D(0)->Print(os, indent);
+    os << indent << "-- GetGeometry2D(" << s << "): ";
+    if ( this->GetGeometry2D(s) == NULL )
+    {
+      os << "NULL" << std::endl;
+    }
+    else
+    {
+      this->GetGeometry2D(s)->Print(os, indent);
+    }
+
+    if (m_EvenlySpaced)
+    {
+      break; // the rest can be deducted
+    }
   }
 }
 
