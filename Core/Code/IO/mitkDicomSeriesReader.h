@@ -370,6 +370,8 @@ public:
       /// Series Modality (CT, MR, etc.)
       std::string GetModality() const;
 
+      std::string GetSeriesDescription() const;
+
       /// SOP Class UID as readable string (Computed Tomography Image Storage, Secondary Capture Image Storage, etc.)
       std::string GetSOPClassUIDAsString() const;
 
@@ -415,6 +417,8 @@ public:
 
       void SetSeriesInstanceUID(const std::string& uid);
 
+      void SetSeriesDescription(const std::string& description);
+
       void SetModality(const std::string& modality);
 
       void SetNumberOfFrames(const std::string& );
@@ -432,6 +436,7 @@ public:
       StringContainer m_Filenames;
       std::string m_ImageBlockUID;
       std::string m_SeriesInstanceUID;
+      std::string m_SeriesDescription;
       std::string m_Modality;
       std::string m_SOPClassUID;
       bool m_HasGantryTiltCorrected;

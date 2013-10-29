@@ -88,6 +88,12 @@ std::string DicomSeriesReader::ImageBlockDescriptor::GetModality() const
   return m_Modality;
 }
 
+std::string DicomSeriesReader::ImageBlockDescriptor::GetSeriesDescription() const
+{
+  return m_SeriesDescription;
+}
+
+
 std::string DicomSeriesReader::ImageBlockDescriptor::GetSOPClassUIDAsString() const
 {
   gdcm::UIDs uidKnowledge;
@@ -257,6 +263,12 @@ void DicomSeriesReader::ImageBlockDescriptor::SetModality(const std::string& mod
 {
   m_Modality = modality;
 }
+
+void DicomSeriesReader::ImageBlockDescriptor::SetSeriesDescription(const std::string& desc)
+{
+  m_SeriesDescription = desc;
+}
+
 
 void DicomSeriesReader::ImageBlockDescriptor::SetNumberOfFrames(const std::string& numberOfFrames)
 {
@@ -1215,6 +1227,9 @@ DicomSeriesReader::GetSeries(const StringContainer& files, bool sortTo3DPlust, b
   const gdcm::Tag tagSeriesInstanceUID(0x0020,0x000e); // Series Instance UID
     scanner.AddTag( tagSeriesInstanceUID );
 
+  const gdcm::Tag tagSeriesDescription(0x0008, 0x103e);
+    scanner.AddTag( tagSeriesDescription );
+
   const gdcm::Tag tagImageOrientation(0x0020, 0x0037); // image orientation
     scanner.AddTag( tagImageOrientation );
 
@@ -1338,6 +1353,7 @@ DicomSeriesReader::GetSeries(const StringContainer& files, bool sortTo3DPlust, b
       thisBlock.SetSOPClassUID( DicomSeriesReader::ConstCharStarToString( scanner.GetValue( firstFileInBlock.c_str(), tagSOPClassUID ) ) );
       thisBlock.SetNumberOfFrames( ConstCharStarToString( scanner.GetValue( firstFileInBlock.c_str(), tagNumberOfFrames ) ) );
       thisBlock.SetModality( DicomSeriesReader::ConstCharStarToString( scanner.GetValue( firstFileInBlock.c_str(), tagModality ) ) );
+      thisBlock.SetSeriesDescription( DicomSeriesReader::ConstCharStarToString( scanner.GetValue( firstFileInBlock.c_str(), tagSeriesDescription ) ) );
       thisBlock.SetPixelSpacingInformation( DicomSeriesReader::ConstCharStarToString( scanner.GetValue( firstFileInBlock.c_str(), tagPixelSpacing ) ),
                                             DicomSeriesReader::ConstCharStarToString( scanner.GetValue( firstFileInBlock.c_str(), tagImagerPixelSpacing ) ) );
       thisBlock.SetHasMultipleTimePoints( false );
