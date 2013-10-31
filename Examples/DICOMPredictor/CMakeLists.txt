@@ -18,10 +18,13 @@ endif()
 
 # Set-up the build system to use the Qmitk module
 MITK_USE_MODULE(QT Mitk) # package QT
-include_directories(${ALL_INCLUDE_DIRECTORIES})
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${ALL_INCLUDE_DIRECTORIES})
 link_directories(${ALL_LIBRARY_DIRS})
 
-add_executable(${PROJECT_NAME} main.cpp)
+QT4_WRAP_UI(GENERATED_UI_CPP DICOMPredictorUI.ui)
+QT4_WRAP_CPP(GENERATED_MOC_CPP DICOMPredictorUI.h)
+
+add_executable(${PROJECT_NAME} main.cpp DICOMPredictorUI.cpp ${GENERATED_MOC_CPP} ${GENERATED_UI_CPP})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBRARIES})
 
 # This is for subproject support inside the MITK source tree.
