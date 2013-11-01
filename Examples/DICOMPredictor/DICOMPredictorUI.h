@@ -30,13 +30,29 @@ namespace Ui
 /**
   \brief Reports the scanning results of DicomSeriesReader.
 
-  This class implements a simple GUI where the user can
-   - select one or more directories from his local file system
-   - analyse selected files regarding how many blocks (mitk::Images) would be created by DicomSeriesReader
+  This GUI offers the user to
+   1. Select one or more directories from his local file system
+   2. Filter files in these directories based on rules for DICOM tags (0008,0008) Image Type and (0008,0060) Modality
+   3. Analyze filtered files regarding how many blocks (mitk::Images) would be created by DicomSeriesReader
+
+  The result list reports of each analyzed SERIES within a directory:
+   - Number of blocks that would be created/loaded
+   - Number of files in those blocks
+   - Series Description
+   - SOP class (e.g. CT Image Storage or PET Image Storage)
+   - Directory of the files analyzed
+   - Series Instance UID
 
   Analysis is fixed to the assumption that DicomSeriesReader is asked to scan with the following options:
-   - create separate blocks for slices at the same position (3D+t = false)
-   - also form blocks of images from gantry tilt acquisitions (gantryTilt = true)
+   - Create separate blocks for slices at the same position (3D+t = false)
+   - Also form blocks of images from gantry tilt acquisitions (gantryTilt = true)
+
+  Filtering of files works in three steps:
+   - check modality against a positive regular expression
+   - check image type against accept-reject rules, which are applied in order:
+     1. if an accept rule matches, the file is immediately accepted, no further rules are evaluated
+     2. if a reject rule matches, the file is immediately rejected
+   - if none of the above brought a descision, accept
 
 */
 class DICOMPredictorUI : public QWidget
@@ -60,35 +76,40 @@ class DICOMPredictorUI : public QWidget
     void SavePresets();
     void UpdateFilterPatternsFromGUI();
 
+    void ResetFiltersToDefault();
+
   protected:
 
-      QSettings* CreateConfig();
+    QSettings* CreateConfig();
 
-      mitk::DicomSeriesReader::StringContainer ConvertQStringListToDCMReaderInput(const QStringList& filenameList);
-      QStringList FindAllFilesIn(const QStringList& listOfFilesAndDirectories, const QString& directoryname = "", bool recurse = true );
-      DicomSeriesDescriptor GroupSortingResultsBySeries( mitk::DicomSeriesReader::FileNamesGrouping imageBlockGrouping );
-      std::string ConcatStringList( std::set<std::string> stringList );
+    mitk::DicomSeriesReader::StringContainer ConvertQStringListToDCMReaderInput(const QStringList& filenameList);
+    bool AcceptableByByModalityAndImageType( const QString& modalityTagValue, const QString& imageTypeTagValue );
+    bool MatchesRegularExpression( const QRegExp& expression, const QString& str);
+    QStringList FilterFilesByModalityAndImageType(const QStringList& filenames);
+    QStringList FindAllFilesIn(const QStringList& listOfFilesAndDirectories, const QString& directoryname = "", bool recurse = true );
+    DicomSeriesDescriptor GroupSortingResultsBySeries( mitk::DicomSeriesReader::FileNamesGrouping imageBlockGrouping );
+    std::string ConcatStringList( std::set<std::string> stringList );
 
-     Ui::DICOMPredictorUI* m_GUI;
+    Ui::DICOMPredictorUI* m_GUI;
 
-     QFileSystemModel m_DirModel;
-     QSortFilterProxyModel m_ProxyModel;
+    QFileSystemModel m_DirModel;
+    QSortFilterProxyModel m_ProxyModel;
 
-     QSettings* m_Config;
+    QSettings* m_Config;
 
-     QRegExp m_ValidModalities;
+    QRegExp m_ValidModalities;
 
-     QRegExp m_AcceptedImageTypes;
-     QRegExp m_AcceptedImageTypePixelData;
-     QRegExp m_AcceptedImageTypeExamination;
-     QRegExp m_AcceptedImageTypeModality;
-     QRegExp m_AcceptedImageTypeOther;
+    QRegExp m_AcceptedImageTypes;
+    QRegExp m_AcceptedImageTypePixelData;
+    QRegExp m_AcceptedImageTypeExamination;
+    QRegExp m_AcceptedImageTypeModality;
+    QRegExp m_AcceptedImageTypeOther;
 
-     QRegExp m_RejectedImageTypes;
-     QRegExp m_RejectedImageTypePixelData;
-     QRegExp m_RejectedImageTypeExamination;
-     QRegExp m_RejectedImageTypeModality;
-     QRegExp m_RejectedImageTypeOther;
+    QRegExp m_RejectedImageTypes;
+    QRegExp m_RejectedImageTypePixelData;
+    QRegExp m_RejectedImageTypeExamination;
+    QRegExp m_RejectedImageTypeModality;
+    QRegExp m_RejectedImageTypeOther;
 };
 
 #endif

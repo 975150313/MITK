@@ -22,6 +22,8 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "DICOMPredictorUI.h"
 
+#include <gdcmScanner.h>
+
 const char* SETTINGS_LAST_FOLDER = "folder/location";
 
 const char* SETTINGS_FILTER_MODALITY = "filter.modality/accept";
@@ -39,6 +41,23 @@ const char* SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT = "filter.imagetype/modal
 const char* SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT =    "filter.imagetype/other.reject";
 
 
+
+const char* DEFAULT_SETTINGS_FILTER_MODALITY = "CT|MR|PT|CR|DX|OT|NM";
+
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_ACCEPT =          "DERIVED\\\\SECONDARY\\\\AXIAL\\\\CT_SOM. SPI DUAL";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT =    "";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT =     "";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT = "";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT =    "";
+
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_REJECT =          "";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT =    "DERIVED";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT =     "";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT = "LOCALIZER";
+const char* DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT =    "MPR|MIP";
+
+
+
 DICOMPredictorUI::DICOMPredictorUI( QWidget* parent, Qt::WindowFlags f )
 : QWidget(parent, f)
 , m_GUI( new Ui::DICOMPredictorUI )
@@ -46,7 +65,8 @@ DICOMPredictorUI::DICOMPredictorUI( QWidget* parent, Qt::WindowFlags f )
 {
   m_GUI->setupUi(this);
 
-  connect( m_GUI->button, SIGNAL(clicked()), this, SLOT(AnalyzeSelectedDirectories()) );
+  connect( m_GUI->btnScanDirectories, SIGNAL(clicked()), this, SLOT(AnalyzeSelectedDirectories()) );
+  connect( m_GUI->btnResetFilters, SIGNAL(clicked()), this, SLOT(ResetFiltersToDefault()) );
 
   m_DirModel.setFilter( QDir::Dirs | QDir::NoDotAndDotDot );
   QString topLevelDir = QDesktopServices::storageLocation(QDesktopServices::DesktopLocation);
@@ -65,14 +85,16 @@ DICOMPredictorUI::DICOMPredictorUI( QWidget* parent, Qt::WindowFlags f )
   QStringList labels;
   labels
          << "# blocks"
+         << "# files"
          << "Series Description"
-         << "SOP Class UID"
+         << "SOP Class"
          << "Directory"
-         << "UID"
+         << "Series UID"
          ;
 
   m_GUI->resultsView->setColumnCount(labels.size());
   m_GUI->resultsView->setColumnWidth( 0, 90 );
+  m_GUI->resultsView->setColumnWidth( 1, 90 );
   m_GUI->resultsView->setHorizontalHeaderLabels( labels );
 
   this->RestoreSavedPresets();
@@ -94,19 +116,19 @@ void DICOMPredictorUI::RestoreSavedPresets()
   m_GUI->dirView->setCurrentIndex( selectedIndex );
   m_GUI->dirView->scrollTo( selectedIndex, QAbstractItemView::PositionAtBottom ); // does not seem to work?
 
-  m_GUI->edtModalityAccept->setText(      m_Config->value( SETTINGS_FILTER_MODALITY, "CT|MR|PT|CR|DX|OT|NM" ).toString() );
+  m_GUI->edtModalityAccept->setText(      m_Config->value( SETTINGS_FILTER_MODALITY, DEFAULT_SETTINGS_FILTER_MODALITY ).toString() );
 
-  m_GUI->edtITAccept->setText(            m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_ACCEPT, "" ).toString() );
-  m_GUI->edtITPixelDataAccept->setText(   m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT, "" ).toString() );
-  m_GUI->edtITExaminationAccept->setText( m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT, "" ).toString() );
-  m_GUI->edtITModalityAccept->setText(    m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT, "" ).toString() );
-  m_GUI->edtITOtherAccept->setText(       m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT, "" ).toString() );
+  m_GUI->edtITAccept->setText(            m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_ACCEPT,          DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_ACCEPT ).toString() );
+  m_GUI->edtITPixelDataAccept->setText(   m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT,    DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT ).toString() );
+  m_GUI->edtITExaminationAccept->setText( m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT,     DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT ).toString() );
+  m_GUI->edtITModalityAccept->setText(    m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT, DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT ).toString() );
+  m_GUI->edtITOtherAccept->setText(       m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT,    DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT ).toString() );
 
-  m_GUI->edtITReject->setText(            m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_REJECT, "" ).toString() );
-  m_GUI->edtITPixelDataReject->setText(   m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT, "" ).toString() );
-  m_GUI->edtITExaminationReject->setText( m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT, "" ).toString() );
-  m_GUI->edtITModalityReject->setText(    m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT, "" ).toString() );
-  m_GUI->edtITOtherReject->setText(       m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT, "" ).toString() );
+  m_GUI->edtITReject->setText(            m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_REJECT,          DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_REJECT ).toString() );
+  m_GUI->edtITPixelDataReject->setText(   m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT,    DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT ).toString() );
+  m_GUI->edtITExaminationReject->setText( m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT,     DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT ).toString() );
+  m_GUI->edtITModalityReject->setText(    m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT, DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT ).toString() );
+  m_GUI->edtITOtherReject->setText(       m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT,    DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT ).toString() );
 
   this->UpdateFilterPatternsFromGUI();
 }
@@ -137,6 +159,25 @@ void DICOMPredictorUI::SavePresets()
   m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT,    m_RejectedImageTypeOther.pattern() );
 
   m_Config->sync();
+}
+
+void DICOMPredictorUI::ResetFiltersToDefault()
+{
+  m_GUI->edtModalityAccept->setText(      DEFAULT_SETTINGS_FILTER_MODALITY );
+
+  m_GUI->edtITAccept->setText(            DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_ACCEPT );
+  m_GUI->edtITPixelDataAccept->setText(   DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT );
+  m_GUI->edtITExaminationAccept->setText( DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT );
+  m_GUI->edtITModalityAccept->setText(    DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT );
+  m_GUI->edtITOtherAccept->setText(       DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT );
+
+  m_GUI->edtITReject->setText(            DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_REJECT );
+  m_GUI->edtITPixelDataReject->setText(   DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT );
+  m_GUI->edtITExaminationReject->setText( DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT );
+  m_GUI->edtITModalityReject->setText(    DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT );
+  m_GUI->edtITOtherReject->setText(       DEFAULT_SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT );
+
+  this->UpdateFilterPatternsFromGUI();
 }
 
 void DICOMPredictorUI::UpdateFilterPatternsFromGUI()
@@ -265,6 +306,8 @@ void DICOMPredictorUI::OutputSeriesGroupingResultsToList( const QString& path,  
     std::set<std::string> psinterprets;
     std::set<std::string> gantrytilts;
     std::set<std::string> multiframes;
+    int numberOfFiles = 0;
+
     for( std::list< mitk::DicomSeriesReader::ImageBlockDescriptor >::const_iterator blockIter = seriesIter->second.begin();
        blockIter != seriesIter->second.end();
        ++blockIter )
@@ -283,6 +326,8 @@ void DICOMPredictorUI::OutputSeriesGroupingResultsToList( const QString& path,  
       psinterprets.insert( psInterpret );
       gantrytilts.insert( blockIter->HasGantryTiltCorrected() ? "yes" : "no" );
       multiframes.insert( blockIter->IsMultiFrameImage() ? "yes" : "no" );
+
+      numberOfFiles += blockIter->GetFilenames().size();
     }
 
     bool problem = seriesIter->second.size() > 1;
@@ -298,8 +343,11 @@ void DICOMPredictorUI::OutputSeriesGroupingResultsToList( const QString& path,  
       QTableWidgetItem *uidItem = new QTableWidgetItem( QString::fromStdString( seriesIter->first ) );
       QTableWidgetItem *sopItem = new QTableWidgetItem( QString::fromStdString(ConcatStringList( sopclassuids )) );
       QTableWidgetItem *blocksItem = new QTableWidgetItem( QString::number( seriesIter->second.size() ) );
+      QTableWidgetItem *filesItem = new QTableWidgetItem( QString::number( numberOfFiles ) );
+
       int col = 0;
       m_GUI->resultsView->setItem( newRow, col++, blocksItem );
+      m_GUI->resultsView->setItem( newRow, col++, filesItem );
       m_GUI->resultsView->setItem( newRow, col++, descriptionItem );
       m_GUI->resultsView->setItem( newRow, col++, sopItem );
       m_GUI->resultsView->setItem( newRow, col++, dirItem );
@@ -310,6 +358,8 @@ void DICOMPredictorUI::OutputSeriesGroupingResultsToList( const QString& path,  
 
 void DICOMPredictorUI::AnalyzeSelectedDirectories()
 {
+  this->UpdateFilterPatternsFromGUI();
+
   QModelIndexList selectedIndexes = m_GUI->dirView->selectionModel()->selectedRows();
 
   m_GUI->progressBar->setMaximum( selectedIndexes.size() );
@@ -333,6 +383,117 @@ void DICOMPredictorUI::AnalyzeDirectory( const QString& path )
   this->AnalyzeDirectory( dirs );
 }
 
+bool DICOMPredictorUI::MatchesRegularExpression( const QRegExp& expression, const QString& str)
+{
+  if (expression.isEmpty())
+  {
+    // we don't want to search for empty string, because we will ALWAYS find one
+    return false;
+  }
+
+  return expression.indexIn( str ) > -1;
+}
+
+bool DICOMPredictorUI::AcceptableByByModalityAndImageType( const QString& modalityTagValue, const QString& imageTypeTagValue )
+{
+  if ( !MatchesRegularExpression( m_ValidModalities, modalityTagValue ) ) return false; // reject
+
+  if ( MatchesRegularExpression( m_AcceptedImageTypes, imageTypeTagValue ) ) return true; // early accept
+
+  static QRegExp imageTypeSplitter(  // tag structure: two mandatory fields, two more optional ones
+      "^"
+      "([^\\\\]*)\\\\([^\\\\]*)"
+      ".*"
+      "(?:"
+        "\\\\([^\\\\]*)"
+        "(?:"
+          "\\\\(.*)"
+        ")?"
+      ")?"
+      "$"
+      );
+  int matchPosition = imageTypeSplitter.indexIn( imageTypeTagValue );
+  QStringList itc = imageTypeSplitter.capturedTexts();
+
+  /*
+  MITK_INFO << "Matched " << qPrintable(imageTypeTagValue )
+            << " at " << matchPosition << " as "
+            << qPrintable(itc.value(1)) << " : "
+            << qPrintable(itc.value(2)) << " :  "
+            << qPrintable(itc.value(3)) << " :  "
+            << qPrintable(itc.value(4)) << ";";
+  */
+
+  if (matchPosition == 0)
+  {
+    QStringList imageTypeComponents = imageTypeSplitter.capturedTexts();
+
+    if ( MatchesRegularExpression( m_AcceptedImageTypePixelData,   imageTypeComponents.value(1) ) ) return true;
+    if ( MatchesRegularExpression( m_AcceptedImageTypeExamination, imageTypeComponents.value(2) ) ) return true;
+    if ( MatchesRegularExpression( m_AcceptedImageTypeModality,    imageTypeComponents.value(3) ) ) return true;
+    if ( MatchesRegularExpression( m_AcceptedImageTypeOther,       imageTypeComponents.value(4) ) ) return true;
+
+    if ( MatchesRegularExpression( m_RejectedImageTypes, imageTypeTagValue ) ) return false; // reject
+    if ( MatchesRegularExpression( m_RejectedImageTypePixelData,   imageTypeComponents.value(1) ) ) return false;
+    if ( MatchesRegularExpression( m_RejectedImageTypeExamination, imageTypeComponents.value(2) ) ) return false;
+    if ( MatchesRegularExpression( m_RejectedImageTypeModality,    imageTypeComponents.value(3) ) ) return false;
+    if ( MatchesRegularExpression( m_RejectedImageTypeOther,       imageTypeComponents.value(4) ) ) return false;
+  }
+  else
+  {
+    MITK_WARN << matchPosition << "Found unparseable value for (0008,0008) Image Type: " << qPrintable( imageTypeTagValue );
+  }
+
+  return true; // fallback: accept
+}
+
+QStringList DICOMPredictorUI::FilterFilesByModalityAndImageType(const QStringList& filenames)
+{
+  QStringList result;
+
+  gdcm::Scanner scanner;
+
+  const gdcm::Tag tagModality(0x0008, 0x0060); // modality
+    scanner.AddTag( tagModality );
+
+  const gdcm::Tag tagImageType(0x0008, 0x0008); // image type
+    scanner.AddTag( tagImageType );
+
+  mitk::DicomSeriesReader::StringContainer gdcmInput = ConvertQStringListToDCMReaderInput( filenames );
+  if ( scanner.Scan( gdcmInput ) )
+  {
+    for (gdcm::Scanner::ConstIterator fileIter = scanner.Begin();
+         fileIter != scanner.End();
+         ++fileIter)
+    {
+      if ( std::string(fileIter->first).empty() ) continue;
+      if ( std::string(fileIter->first) == std::string("DICOMDIR") ) continue;
+
+      gdcm::Scanner::TagToValue& tagValueMap = const_cast<gdcm::Scanner::TagToValue&>(fileIter->second);
+
+      const char* modalityValue = tagValueMap[tagModality];
+      const char* imageTypeValue = tagValueMap[tagImageType];
+
+      if ( AcceptableByByModalityAndImageType( modalityValue, imageTypeValue ) )
+      {
+        result << fileIter->first;
+        //MITK_INFO << "Accepted Modality, Image Type: " << modalityValue << " : " << imageTypeValue;
+      }
+      else
+      {
+        MITK_INFO << "REJECTED Modality, Image Type: " << modalityValue << " : " << imageTypeValue;
+      }
+    }
+  }
+  else
+  {
+    MITK_WARN << "Error during gdcm::Scanner::Scan(). Output might not be correct.";
+    return filenames;
+  }
+
+  return result;
+}
+
 void DICOMPredictorUI::AnalyzeDirectory( const QStringList& paths )
 {
   foreach (QString directory, paths)
@@ -342,7 +503,8 @@ void DICOMPredictorUI::AnalyzeDirectory( const QStringList& paths )
     QStringList dirs;
     dirs << directory;
     QStringList allFilesToCheck = FindAllFilesIn( dirs, "", false ); // false = no recursion
-    mitk::DicomSeriesReader::StringContainer allFilesToCheckDCMReader = ConvertQStringListToDCMReaderInput( allFilesToCheck );
+    QStringList allFilteredFilesToCheck = FilterFilesByModalityAndImageType( allFilesToCheck );
+    mitk::DicomSeriesReader::StringContainer allFilesToCheckDCMReader = ConvertQStringListToDCMReaderInput( allFilteredFilesToCheck );
     try
     {
       mitk::DicomSeriesReader::FileNamesGrouping imageBlockGrouping = mitk::DicomSeriesReader::GetSeries( allFilesToCheckDCMReader, false, true );
@@ -354,10 +516,10 @@ void DICOMPredictorUI::AnalyzeDirectory( const QStringList& paths )
         m_GUI->resultsView->insertRow( newRow );
 
         QTableWidgetItem *dirItem = new QTableWidgetItem( directory );
-        QTableWidgetItem *descriptionItem = new QTableWidgetItem( "No DICOM files in direcotry." );
+        QTableWidgetItem *descriptionItem = new QTableWidgetItem( "No acceptable files in direcotry." );
 
-        m_GUI->resultsView->setItem( newRow, 3, dirItem );
-        m_GUI->resultsView->setItem( newRow, 1, descriptionItem );
+        m_GUI->resultsView->setItem( newRow, 4, dirItem );
+        m_GUI->resultsView->setItem( newRow, 2, descriptionItem );
       }
       else
       {
@@ -372,8 +534,8 @@ void DICOMPredictorUI::AnalyzeDirectory( const QStringList& paths )
       QTableWidgetItem *dirItem = new QTableWidgetItem( directory );
       QTableWidgetItem *descriptionItem = new QTableWidgetItem( QString("Scan error:") + e.what() );
 
-      m_GUI->resultsView->setItem( newRow, 3, dirItem );
-      m_GUI->resultsView->setItem( newRow, 1, descriptionItem );
+      m_GUI->resultsView->setItem( newRow, 4, dirItem );
+      m_GUI->resultsView->setItem( newRow, 2, descriptionItem );
     }
 
     m_Config->setValue( SETTINGS_LAST_FOLDER, directory );
