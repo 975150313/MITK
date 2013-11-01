@@ -22,6 +22,148 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "DICOMPredictorUI.h"
 
+const char* SETTINGS_LAST_FOLDER = "folder/location";
+
+const char* SETTINGS_FILTER_MODALITY = "filter.modality/accept";
+
+const char* SETTINGS_FILTER_IMAGE_TYPE_ACCEPT =          "filter.imagetype/accept";
+const char* SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT =    "filter.imagetype/pixel.accept";
+const char* SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT =     "filter.imagetype/examination.accept";
+const char* SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT = "filter.imagetype/modality.accept";
+const char* SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT =    "filter.imagetype/other.accept";
+
+const char* SETTINGS_FILTER_IMAGE_TYPE_REJECT =          "filter.imagetype/reject";
+const char* SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT =    "filter.imagetype/pixel.reject";
+const char* SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT =     "filter.imagetype/examination.reject";
+const char* SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT = "filter.imagetype/modality.reject";
+const char* SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT =    "filter.imagetype/other.reject";
+
+
+DICOMPredictorUI::DICOMPredictorUI( QWidget* parent, Qt::WindowFlags f )
+: QWidget(parent, f)
+, m_GUI( new Ui::DICOMPredictorUI )
+, m_Config( CreateConfig() )
+{
+  m_GUI->setupUi(this);
+
+  connect( m_GUI->button, SIGNAL(clicked()), this, SLOT(AnalyzeSelectedDirectories()) );
+
+  m_DirModel.setFilter( QDir::Dirs | QDir::NoDotAndDotDot );
+  QString topLevelDir = QDesktopServices::storageLocation(QDesktopServices::DesktopLocation);
+  m_DirModel.setRootPath( topLevelDir );
+
+  m_ProxyModel.setSourceModel( &m_DirModel );
+
+  m_GUI->dirView->setModel( &m_ProxyModel );
+
+  m_GUI->dirView->setSortingEnabled( true );
+  m_GUI->dirView->sortByColumn( 0, Qt::AscendingOrder );
+  m_GUI->dirView->setColumnHidden( 1, true );
+  m_GUI->dirView->setColumnHidden( 2, true );
+  m_GUI->dirView->setColumnHidden( 3, true );
+
+  QStringList labels;
+  labels
+         << "# blocks"
+         << "Series Description"
+         << "SOP Class UID"
+         << "Directory"
+         << "UID"
+         ;
+
+  m_GUI->resultsView->setColumnCount(labels.size());
+  m_GUI->resultsView->setColumnWidth( 0, 90 );
+  m_GUI->resultsView->setHorizontalHeaderLabels( labels );
+
+  this->RestoreSavedPresets();
+
+  connect( qApp, SIGNAL(aboutToQuit()), this, SLOT(SavePresets()) );
+
+  // TODO call SavePresets on application exit!
+}
+
+
+DICOMPredictorUI::~DICOMPredictorUI()
+{
+}
+
+void DICOMPredictorUI::RestoreSavedPresets()
+{
+  QString lastPath = m_Config->value( SETTINGS_LAST_FOLDER, QDir::currentPath() ).toString();
+  QModelIndex selectedIndex = m_ProxyModel.mapFromSource( m_DirModel.index( lastPath ) );
+  m_GUI->dirView->setCurrentIndex( selectedIndex );
+  m_GUI->dirView->scrollTo( selectedIndex, QAbstractItemView::PositionAtBottom ); // does not seem to work?
+
+  m_GUI->edtModalityAccept->setText(      m_Config->value( SETTINGS_FILTER_MODALITY, "CT|MR|PT|CR|DX|OT|NM" ).toString() );
+
+  m_GUI->edtITAccept->setText(            m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_ACCEPT, "" ).toString() );
+  m_GUI->edtITPixelDataAccept->setText(   m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT, "" ).toString() );
+  m_GUI->edtITExaminationAccept->setText( m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT, "" ).toString() );
+  m_GUI->edtITModalityAccept->setText(    m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT, "" ).toString() );
+  m_GUI->edtITOtherAccept->setText(       m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT, "" ).toString() );
+
+  m_GUI->edtITReject->setText(            m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_REJECT, "" ).toString() );
+  m_GUI->edtITPixelDataReject->setText(   m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT, "" ).toString() );
+  m_GUI->edtITExaminationReject->setText( m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT, "" ).toString() );
+  m_GUI->edtITModalityReject->setText(    m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT, "" ).toString() );
+  m_GUI->edtITOtherReject->setText(       m_Config->value( SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT, "" ).toString() );
+
+  this->UpdateFilterPatternsFromGUI();
+}
+
+void DICOMPredictorUI::SavePresets()
+{
+  /* would be nice to do this here, but we already store each iterated directory
+  QString lastPath = m_Config->value( SETTINGS_LAST_FOLDER, QDir::currentPath() ).toString();
+  QModelIndex selectedIndex = m_ProxyModel.mapFromSource( m_DirModel.index( lastPath ) );
+  m_GUI->dirView->setCurrentIndex( selectedIndex );
+  m_GUI->dirView->scrollTo( selectedIndex, QAbstractItemView::PositionAtBottom ); // does not seem to work?
+  */
+
+  this->UpdateFilterPatternsFromGUI();
+
+  m_Config->setValue( SETTINGS_FILTER_MODALITY,                   m_ValidModalities.pattern() );
+
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_ACCEPT,          m_AcceptedImageTypes.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_ACCEPT,    m_AcceptedImageTypePixelData.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_EXAM_ACCEPT,     m_AcceptedImageTypeExamination.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_ACCEPT, m_AcceptedImageTypeModality.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_OTHER_ACCEPT,    m_AcceptedImageTypeOther.pattern() );
+
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_REJECT,          m_RejectedImageTypes.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_PIXEL_REJECT,    m_RejectedImageTypePixelData.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_EXAM_REJECT,     m_RejectedImageTypeExamination.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_MODALITY_REJECT, m_RejectedImageTypeModality.pattern() );
+  m_Config->setValue( SETTINGS_FILTER_IMAGE_TYPE_OTHER_REJECT,    m_RejectedImageTypeOther.pattern() );
+
+  m_Config->sync();
+}
+
+void DICOMPredictorUI::UpdateFilterPatternsFromGUI()
+{
+  m_ValidModalities.setPattern(               m_GUI->edtModalityAccept->text() );
+
+  m_AcceptedImageTypes.setPattern(            m_GUI->edtITAccept->text() );
+  m_AcceptedImageTypePixelData.setPattern(    m_GUI->edtITPixelDataAccept->text() );
+  m_AcceptedImageTypeExamination.setPattern(  m_GUI->edtITExaminationAccept->text() );
+  m_AcceptedImageTypeModality.setPattern(     m_GUI->edtITModalityAccept->text() );
+  m_AcceptedImageTypeOther.setPattern(        m_GUI->edtITOtherAccept->text() );
+
+  m_RejectedImageTypes.setPattern(            m_GUI->edtITReject->text() );
+  m_RejectedImageTypePixelData.setPattern(    m_GUI->edtITPixelDataReject->text() );
+  m_RejectedImageTypeExamination.setPattern(  m_GUI->edtITExaminationReject->text() );
+  m_RejectedImageTypeModality.setPattern(     m_GUI->edtITModalityReject->text() );
+  m_RejectedImageTypeOther.setPattern(        m_GUI->edtITOtherReject->text() );
+}
+
+
+QSettings* DICOMPredictorUI::CreateConfig()
+{
+  QSettings* settings = new QSettings( QApplication::applicationDirPath() + QDir::separator() + "predictor.ini", QSettings::IniFormat, this );
+  return settings;
+}
+
+
 mitk::DicomSeriesReader::StringContainer DICOMPredictorUI::ConvertQStringListToDCMReaderInput(const QStringList& filenameList)
 {
   mitk::DicomSeriesReader::StringContainer result;
@@ -166,48 +308,6 @@ void DICOMPredictorUI::OutputSeriesGroupingResultsToList( const QString& path,  
   }
 }
 
-
-DICOMPredictorUI::DICOMPredictorUI( QWidget* parent, Qt::WindowFlags f )
-: QWidget(parent, f)
-, m_GUI( new Ui::DICOMPredictorUI )
-{
-  m_GUI->setupUi(this);
-
-  connect( m_GUI->button, SIGNAL(clicked()), this, SLOT(AnalyzeSelectedDirectories()) );
-
-  m_DirModel.setFilter( QDir::Dirs | QDir::NoDotAndDotDot );
-  QString topLevelDir = QDesktopServices::storageLocation(QDesktopServices::DesktopLocation);
-  m_DirModel.setRootPath( topLevelDir );
-
-  m_ProxyModel.setSourceModel( &m_DirModel );
-
-  m_GUI->dirView->setModel( &m_ProxyModel );
-
-  m_GUI->dirView->setSortingEnabled( true );
-  m_GUI->dirView->sortByColumn( 0, Qt::AscendingOrder );
-  m_GUI->dirView->setColumnHidden( 1, true );
-  m_GUI->dirView->setColumnHidden( 2, true );
-  m_GUI->dirView->setColumnHidden( 3, true );
-
-  QStringList labels;
-  labels
-         << "# blocks"
-         << "Series Description"
-         << "SOP Class UID"
-         << "Directory"
-         << "UID"
-         ;
-
-  m_GUI->resultsView->setColumnCount(labels.size());
-  m_GUI->resultsView->setColumnWidth( 0, 90 );
-  m_GUI->resultsView->setHorizontalHeaderLabels( labels );
-}
-
-
-DICOMPredictorUI::~DICOMPredictorUI()
-{
-}
-
 void DICOMPredictorUI::AnalyzeSelectedDirectories()
 {
   QModelIndexList selectedIndexes = m_GUI->dirView->selectionModel()->selectedRows();
@@ -256,7 +356,6 @@ void DICOMPredictorUI::AnalyzeDirectory( const QStringList& paths )
         QTableWidgetItem *dirItem = new QTableWidgetItem( directory );
         QTableWidgetItem *descriptionItem = new QTableWidgetItem( "No DICOM files in direcotry." );
 
-        int col = 0;
         m_GUI->resultsView->setItem( newRow, 3, dirItem );
         m_GUI->resultsView->setItem( newRow, 1, descriptionItem );
       }
@@ -273,10 +372,11 @@ void DICOMPredictorUI::AnalyzeDirectory( const QStringList& paths )
       QTableWidgetItem *dirItem = new QTableWidgetItem( directory );
       QTableWidgetItem *descriptionItem = new QTableWidgetItem( QString("Scan error:") + e.what() );
 
-      int col = 0;
       m_GUI->resultsView->setItem( newRow, 3, dirItem );
       m_GUI->resultsView->setItem( newRow, 1, descriptionItem );
     }
+
+    m_Config->setValue( SETTINGS_LAST_FOLDER, directory );
   }
 }
 

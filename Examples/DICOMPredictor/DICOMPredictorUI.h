@@ -56,7 +56,13 @@ class DICOMPredictorUI : public QWidget
 
     void OutputSeriesGroupingResultsToList( const QString& path, DicomSeriesDescriptor seriesGrouping, bool& multiBlocksPresent );
 
+    void RestoreSavedPresets();
+    void SavePresets();
+    void UpdateFilterPatternsFromGUI();
+
   protected:
+
+      QSettings* CreateConfig();
 
       mitk::DicomSeriesReader::StringContainer ConvertQStringListToDCMReaderInput(const QStringList& filenameList);
       QStringList FindAllFilesIn(const QStringList& listOfFilesAndDirectories, const QString& directoryname = "", bool recurse = true );
@@ -67,6 +73,22 @@ class DICOMPredictorUI : public QWidget
 
      QFileSystemModel m_DirModel;
      QSortFilterProxyModel m_ProxyModel;
+
+     QSettings* m_Config;
+
+     QRegExp m_ValidModalities;
+
+     QRegExp m_AcceptedImageTypes;
+     QRegExp m_AcceptedImageTypePixelData;
+     QRegExp m_AcceptedImageTypeExamination;
+     QRegExp m_AcceptedImageTypeModality;
+     QRegExp m_AcceptedImageTypeOther;
+
+     QRegExp m_RejectedImageTypes;
+     QRegExp m_RejectedImageTypePixelData;
+     QRegExp m_RejectedImageTypeExamination;
+     QRegExp m_RejectedImageTypeModality;
+     QRegExp m_RejectedImageTypeOther;
 };
 
 #endif
