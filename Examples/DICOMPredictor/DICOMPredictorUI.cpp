@@ -441,7 +441,7 @@ bool DICOMPredictorUI::AcceptableByByModalityAndImageType( const QString& modali
   }
   else
   {
-    MITK_WARN << matchPosition << "Found unparseable value for (0008,0008) Image Type: " << qPrintable( imageTypeTagValue );
+    MITK_WARN << "Found unparseable value for (0008,0008) Image Type: " << qPrintable( imageTypeTagValue );
   }
 
   return true; // fallback: accept
