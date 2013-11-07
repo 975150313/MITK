@@ -14,18 +14,15 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 ===================================================================*/
 
-#ifndef mitkDICOMDataset_h
-#define mitkDICOMDataset_h
+#ifndef mitkDICOMDatasetGDCM_h
+#define mitkDICOMDatasetGDCM_h
 
-#include "itkObjectFactory.h"
-#include "mitkCommon.h"
+#include "mitkDICOMDataset.h"
 
-#include "mitkDICOMExports.h"
+#include "gdcmDataSet.h"
 
 namespace mitk
 {
-
-class DICOMDatasetImplementation;
 
 /**
   \brief TODO TODO TODO Describe class.
@@ -33,15 +30,13 @@ class DICOMDatasetImplementation;
   TODO TODO TODO Describe class in more detail.
 
 */
-class mitkDICOM_EXPORT DICOMDataset : public itk::LightObject
+class DICOMDatasetGDCM : public DICOMDataset
 {
   public:
 
-    mitkClassMacro( DICOMDataset, itk::LightObject )
-    itkNewMacro( DICOMDataset );
-    mitkCloneMacro( DICOMDataset );
-
-    typedef std::vector<std::pair<int,int> > TagList;
+    mitkClassMacro( DICOMDatasetGDCM, DICOMDataset )
+    itkNewMacro( DICOMDatasetGDCM );
+    mitkCloneMacro( DICOMDatasetGDCM );
 
     virtual const TagList GetTags() const;
     virtual std::string GetVR(int group, int element) const;
@@ -52,25 +47,26 @@ class mitkDICOM_EXPORT DICOMDataset : public itk::LightObject
     virtual bool GetAttributeValueAsDoubles (int group, int element, std::list<double>& values) const;
     /*
     virtual bool GetAttributeValueAsInteger(int group, int element, int& value) const;
-    virtual bool GetAttributeValueAsIntegers(int group, int element, std::list<int>& values) const;
-    virtual bool GetAttributeValueAsDataset(int group, int element, DICOMDataset& value) const;
+    virtual bool GetAttributeValueAsIntegers(int group, int element, std::list<int>& value) const;
+    virtual bool GetAttributeValueAsDataset(int group, int element, DICOMDatasetGDCM& value) const; // SQ
     */
 
-    void SetAttributes( const DICOMDataset& initializer );
+    void Initialize( const gdcm::DataSet& dataset );
 
     virtual void PrintToStdOut() const;
 
   protected:
 
-    DICOMDataset();
-    virtual ~DICOMDataset();
+    DICOMDatasetGDCM();
+    virtual ~DICOMDatasetGDCM();
 
-    DICOMDataset(const DICOMDataset& other);
-    DICOMDataset& operator=(const DICOMDataset& other);
+    DICOMDatasetGDCM(const DICOMDatasetGDCM& other);
+    DICOMDatasetGDCM& operator=(const DICOMDatasetGDCM& other);
 
   private:
 
-    DICOMDatasetImplementation* p;
+    bool m_Initialized;
+    gdcm::DataSet m_GDCMDataset;
 };
 
 }

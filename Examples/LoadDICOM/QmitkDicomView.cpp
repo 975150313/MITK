@@ -142,6 +142,107 @@ void QmitkDicomView::ProcessModifiedDataNode()
   this->UpdateToModifiedSeries();
 }
 
+template< typename T >
+std::string int_to_hex( T i )
+{
+  std::stringstream stream;
+  stream //<< "0x"
+    << std::setfill ('0') << std::setw(4) << std::hex << i;
+  return stream.str();
+}
+
+void QmitkDicomView::DumpImageTags( const mitk::DICOMImage* image )
+{
+  //image->PrintToStdOut(); // GDCM dump
+  assert(image);
+
+  mitk::DICOMDataset::TagList tags = image->GetTags();
+  for (mitk::DICOMDataset::TagList::const_iterator tagIter = tags.begin();
+       tagIter != tags.end();
+       ++tagIter)
+  {
+    int gi = tagIter->first;
+    int ei = tagIter->second;
+    std::string gs = int_to_hex( gi );
+    std::string es = int_to_hex( ei );
+    std::string vrs = image->GetVR(gi,ei);
+    std::string stringValue;
+    double doubleValue;
+    bool canBeString = image->GetAttributeValueAsString(gi,ei,stringValue);
+    bool canBeDouble = image->GetAttributeValueAsDouble(gi,ei,doubleValue);
+    std::cout << "(" << gs << "," << es << "): ";
+    std::cout << "[" << vrs << "]: ";
+    std::cout << " string:";
+    if (canBeString)
+      std::cout << "'" << stringValue << "'";
+    else
+      std::cout << "<no string>";
+
+    std::cout << " double:";
+    if (canBeDouble)
+      std::cout << doubleValue;
+    else
+      std::cout << "<no double>";
+
+    std::cout << std::endl;;
+  }
+
+  std::string imageType;
+  if ( image->GetAttributeValueAsString(0x008, 0x008,imageType) )
+  {
+    std::cout << "Image Type: " << imageType << std::endl;
+  }
+  else
+  {
+    std::cout << "Image Type: <not readable>" << std::endl;
+  }
+
+  std::list<std::string> imageTypeComponents;
+  if ( image->GetAttributeValueAsStrings(0x008, 0x008,imageTypeComponents) )
+  {
+    std::cout << "Image Type [array]: ";
+    for ( std::list<std::string>::const_iterator i = imageTypeComponents.begin();
+          i != imageTypeComponents.end();
+          ++i )
+    {
+      std::cout << *i << " ";
+    }
+    std::cout << std::endl;
+  }
+  else
+  {
+    std::cout << "Image Type [array]: <not readable>" << std::endl;
+  }
+
+  double imageOrientationFirst;
+  if ( image->GetAttributeValueAsDouble(0x020, 0x037,imageOrientationFirst) )
+  {
+    std::cout << "Image Orientation [first]: " << imageOrientationFirst << std::endl;
+  }
+  else
+  {
+    std::cout << "Image Type [first]: <not readable>" << std::endl;
+  }
+
+
+  std::list<double> imageOrientationPatient;
+  if ( image->GetAttributeValueAsDoubles(0x020, 0x037,imageOrientationPatient) )
+  {
+    std::cout << "Image Orientation (Patient) [array]: ";
+    for ( std::list<double>::const_iterator dimIter = imageOrientationPatient.begin();
+          dimIter != imageOrientationPatient.end();
+          ++dimIter )
+    {
+      std::cout << *dimIter << " ";
+    }
+    std::cout << std::endl;
+  }
+  else
+  {
+    std::cout << "Image Orientation (Patient): <not readable>" << std::endl;
+  }
+}
+
 
 void QmitkDicomView::FirstSeriesLoadingResultAvailable()
 {
@@ -149,6 +250,11 @@ void QmitkDicomView::FirstSeriesLoadingResultAvailable()
 
   assert(series.IsNotNull());
   assert(series->GetGeometry() != 0);
+
+  std::cout << "============== BEGIN First image attributes ================" << std::endl;
+  mitk::DICOMImage::ConstPointer firstImage = series->GetAllDICOMImages().front();
+  this->DumpImageTags(firstImage);
+  std::cout << "============== END First image attributes ================" << std::endl;
 
   m_DataNode = mitk::DataNode::New();
   m_DataNode->SetData( series );

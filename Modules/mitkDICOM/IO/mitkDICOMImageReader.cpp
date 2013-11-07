@@ -15,6 +15,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 ===================================================================*/
 
 #include "mitkDICOMImageReader.h"
+#include "mitkDICOMDatasetGDCM.h"
 
 #include "mitkImageGenerator.h"
 
@@ -57,7 +58,7 @@ class mitk::DICOMImageReaderImplementation
     template <typename PixelType>
     void ProcessTypedFileGDCM(const std::string& filename);
 
-    PlaneGeometry::Pointer CreatePlaneGeometryGDCM( const std::string& filename );
+    void CreatePlaneGeometryAndFillTagsGDCM( const std::string& filename, DICOMImage* dicomImage );
 
     void ProcessFileDCMTK(const std::string& filename);
     DICOMImage::Pointer ReadFrameFromFileDCMTK(DcmDataset* dicomDataset, unsigned long frame);
@@ -266,23 +267,24 @@ mitk::DICOMImageReaderImplementation
   MITK_INFO << "Plane geometry " << (void*) planeGeometry.GetPointer();
   dicomImage->SetImagePlane( planeGeometry );
   */
-  PlaneGeometry::Pointer planeGeometry = this->CreatePlaneGeometryGDCM( filename );
-  dicomImage->SetImagePlane( planeGeometry );
+  this->CreatePlaneGeometryAndFillTagsGDCM( filename, dicomImage ); // MIGHT not create anything (reader errors)
 
   this->m_Outputs.push_back( dicomImage );
 }
 
-mitk::PlaneGeometry::Pointer
+void
 mitk::DICOMImageReaderImplementation
-::CreatePlaneGeometryGDCM( const std::string& filename )
+::CreatePlaneGeometryAndFillTagsGDCM( const std::string& filename, DICOMImage* dicomImage )
 {
+  assert(dicomImage);
+
   gdcm::ImageReader reader;
   reader.SetFileName( filename.c_str() );
   if ( !reader.Read() )
   {
     // error handling
     MITK_ERROR << "GDCM unable to read file " << filename << ". Perhaps we can fallback to DCMTK?";
-    return NULL;
+    return;
   }
 
   gdcm::Image& gdcmImage = reader.GetImage();
@@ -313,7 +315,10 @@ mitk::DICOMImageReaderImplementation
   planeGeometry->ChangeImageGeometryConsideringOriginOffset(true);
   planeGeometry->SetOrigin(imageOrigin);
 
-  return planeGeometry;
+  dicomImage->SetImagePlane( planeGeometry );
+  DICOMDatasetGDCM::Pointer datasetGDCM = DICOMDatasetGDCM::New();
+  datasetGDCM->Initialize( reader.GetFile().GetDataSet() );
+  dicomImage->SetAttributes( *datasetGDCM );
 }
 
 /*

@@ -89,6 +89,8 @@ class QmitkDicomView : public QWidget
 
     void SetupRendering();
 
+    void DumpImageTags( const mitk::DICOMImage* image );
+
     Ui::QmitkDicomView* m_GUI;
 
     mitk::DICOMSeriesReader::Pointer m_Reader;

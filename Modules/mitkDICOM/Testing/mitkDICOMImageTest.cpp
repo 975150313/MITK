@@ -30,6 +30,7 @@ int mitkDICOMImageTest(int /* argc */, char* /*argv*/[])
   MITK_TEST_CONDITION(dicomImage->GetPixelDataContainer().IsNull(),"Uninitialized DICOMImage has no pixel data");
   MITK_TEST_CONDITION(dicomImage->GetImagePlane().IsNull(),"Uninitialized DICOMImage has no orientation");
 
+  /*
   try {
     dicomImage->GetAttributeValue<double>(0x0028, 0x0030); // pixel spacing
     MITK_TEST_CONDITION( false ,"GetAttributeValue not yet implemented");
@@ -38,6 +39,7 @@ int mitkDICOMImageTest(int /* argc */, char* /*argv*/[])
   {
     MITK_TEST_CONDITION( true ,"GetAttributeValue not yet implemented");
   }
+  */
 
   mitk::Image::Pointer mitkImage = mitk::Image::New();
   dicomImage->SetPixelDataContainer( mitkImage );
