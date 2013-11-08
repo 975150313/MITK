@@ -108,9 +108,9 @@ mitk::DICOMDataset
 
 bool
 mitk::DICOMDataset
-::GetAttributeValueAsDouble (int group, int element, double& values) const
+::GetAttributeValueAsDouble (int group, int element, double& value) const
 {
-  return p->m_InternalDataset.IsNotNull() ? p->m_InternalDataset->GetAttributeValueAsDouble(group, element, values) : false;
+  return p->m_InternalDataset.IsNotNull() ? p->m_InternalDataset->GetAttributeValueAsDouble(group, element, value) : false;
 }
 
 bool
@@ -118,4 +118,11 @@ mitk::DICOMDataset
 ::GetAttributeValueAsDoubles (int group, int element, std::list<double>& values) const
 {
   return p->m_InternalDataset.IsNotNull() ? p->m_InternalDataset->GetAttributeValueAsDoubles(group, element, values) : false;
+}
+
+bool
+mitk::DICOMDataset
+::GetAttributeValueAsSequence(int group, int element, Sequence& value) const
+{
+  return p->m_InternalDataset.IsNotNull() ? p->m_InternalDataset->GetAttributeValueAsSequence(group, element, value) : false;
 }

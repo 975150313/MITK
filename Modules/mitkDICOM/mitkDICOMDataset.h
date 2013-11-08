@@ -42,6 +42,7 @@ class mitkDICOM_EXPORT DICOMDataset : public itk::LightObject
     mitkCloneMacro( DICOMDataset );
 
     typedef std::vector<std::pair<int,int> > TagList;
+    typedef std::vector<DICOMDataset::Pointer> Sequence;
 
     virtual const TagList GetTags() const;
     virtual std::string GetVR(int group, int element) const;
@@ -53,8 +54,8 @@ class mitkDICOM_EXPORT DICOMDataset : public itk::LightObject
     /*
     virtual bool GetAttributeValueAsInteger(int group, int element, int& value) const;
     virtual bool GetAttributeValueAsIntegers(int group, int element, std::list<int>& values) const;
-    virtual bool GetAttributeValueAsDataset(int group, int element, DICOMDataset& value) const;
     */
+    virtual bool GetAttributeValueAsSequence(int group, int element, Sequence& value) const;
 
     void SetAttributes( const DICOMDataset& initializer );
 

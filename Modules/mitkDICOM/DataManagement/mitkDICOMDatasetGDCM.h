@@ -48,8 +48,8 @@ class DICOMDatasetGDCM : public DICOMDataset
     /*
     virtual bool GetAttributeValueAsInteger(int group, int element, int& value) const;
     virtual bool GetAttributeValueAsIntegers(int group, int element, std::list<int>& value) const;
-    virtual bool GetAttributeValueAsDataset(int group, int element, DICOMDatasetGDCM& value) const; // SQ
     */
+    virtual bool GetAttributeValueAsSequence(int group, int element, Sequence& value) const; // SQ
 
     void Initialize( const gdcm::DataSet& dataset );
 

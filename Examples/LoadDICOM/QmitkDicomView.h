@@ -89,7 +89,7 @@ class QmitkDicomView : public QWidget
 
     void SetupRendering();
 
-    void DumpImageTags( const mitk::DICOMImage* image );
+    void DumpDataset( const mitk::DICOMDataset* dataset, const std::string& indent = "" );
 
     Ui::QmitkDicomView* m_GUI;
 

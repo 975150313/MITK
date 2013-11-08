@@ -20,6 +20,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <gdcmDict.h>
 #include <gdcmDicts.h>
 #include <gdcmGlobal.h>
+#include <gdcmSequenceOfItems.h>
 
 mitk::DICOMDatasetGDCM::DICOMDatasetGDCM()
 :DICOMDataset()
@@ -137,6 +138,12 @@ mitk::DICOMDatasetGDCM
   if (m_GDCMDataset.FindDataElement(tag) )
   {
     const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
+    if (dataElement.IsEmpty())
+    {
+      value = "";
+      return true; // there WAS something, but empty!
+    }
+
     const gdcm::VR& vr = dataElement.GetVR();
     std::stringstream ss;
     switch (vr)
@@ -195,6 +202,11 @@ mitk::DICOMDatasetGDCM
   if (m_GDCMDataset.FindDataElement(tag) )
   {
     const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
+    if (dataElement.IsEmpty())
+    {
+      return true; // there WAS something, but empty!
+    }
+
     const gdcm::VR& vr = dataElement.GetVR();
     std::stringstream ss;
     switch (vr)
@@ -270,6 +282,11 @@ mitk::DICOMDatasetGDCM
   if (m_GDCMDataset.FindDataElement(tag) )
   {
     const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
+    if (dataElement.IsEmpty())
+    {
+      return true; // there WAS something, but empty!
+    }
+
     const gdcm::VR& vr = dataElement.GetVR();
     std::stringstream ss;
     switch (vr)
@@ -299,6 +316,44 @@ mitk::DICOMDatasetGDCM
   return false;
 }
 
+bool
+mitk::DICOMDatasetGDCM
+::GetAttributeValueAsSequence(int group, int element, Sequence& return_value) const
+{
+  const gdcm::Tag tag(group, element);
+  if (m_GDCMDataset.FindDataElement(tag) )
+  {
+    const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
+    const gdcm::VR& vr = dataElement.GetVR();
+    std::stringstream ss;
+    switch (vr)
+    {
+      case gdcm::VR::SQ:
+        {
+          gdcm::SmartPointer<gdcm::SequenceOfItems> sequence = dataElement.GetValueAsSQ();
+          if (sequence)
+          {
+            for (gdcm::SequenceOfItems::ItemVector::const_iterator seqIter = sequence->Items.begin();
+                 seqIter != sequence->Items.end();
+                 ++seqIter)
+            {
+              const gdcm::DataSet& currentDataSet = seqIter->GetNestedDataSet();
+              DICOMDatasetGDCM::Pointer mitkWrapperSet = DICOMDatasetGDCM::New();
+              mitkWrapperSet->Initialize( currentDataSet );
+              return_value.push_back( mitkWrapperSet.GetPointer() );
+            }
+          }
+          break;
+        }
+      default:
+        return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+// TODO to be deleted or re-written w/o direct use of GDCM
 void
 mitk::DICOMDatasetGDCM
 ::PrintToStdOut() const

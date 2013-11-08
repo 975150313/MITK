@@ -151,12 +151,12 @@ std::string int_to_hex( T i )
   return stream.str();
 }
 
-void QmitkDicomView::DumpImageTags( const mitk::DICOMImage* image )
+void QmitkDicomView::DumpDataset( const mitk::DICOMDataset* dataset, const std::string& indent )
 {
-  //image->PrintToStdOut(); // GDCM dump
-  assert(image);
+  //dataset->PrintToStdOut(); // GDCM dump
+  assert(dataset);
 
-  mitk::DICOMDataset::TagList tags = image->GetTags();
+  mitk::DICOMDataset::TagList tags = dataset->GetTags();
   for (mitk::DICOMDataset::TagList::const_iterator tagIter = tags.begin();
        tagIter != tags.end();
        ++tagIter)
@@ -165,81 +165,102 @@ void QmitkDicomView::DumpImageTags( const mitk::DICOMImage* image )
     int ei = tagIter->second;
     std::string gs = int_to_hex( gi );
     std::string es = int_to_hex( ei );
-    std::string vrs = image->GetVR(gi,ei);
+    std::string vrs = dataset->GetVR(gi,ei);
     std::string stringValue;
     double doubleValue;
-    bool canBeString = image->GetAttributeValueAsString(gi,ei,stringValue);
-    bool canBeDouble = image->GetAttributeValueAsDouble(gi,ei,doubleValue);
+    bool canBeString = dataset->GetAttributeValueAsString(gi,ei,stringValue);
+    bool canBeDouble = dataset->GetAttributeValueAsDouble(gi,ei,doubleValue);
+    mitk::DICOMDataset::Sequence sequenceValue;
+    bool isSequence = dataset->GetAttributeValueAsSequence(gi,ei,sequenceValue);
+    std::cout << indent;
     std::cout << "(" << gs << "," << es << "): ";
     std::cout << "[" << vrs << "]: ";
-    std::cout << " string:";
-    if (canBeString)
-      std::cout << "'" << stringValue << "'";
+    if (isSequence)
+    {
+      std::cout << " sequence:" << std::endl;
+      unsigned int itemCount = 1;
+      for (mitk::DICOMDataset::Sequence::const_iterator seqIter = sequenceValue.begin();
+           seqIter != sequenceValue.end();
+           ++seqIter, ++itemCount)
+      {
+        std::cout << indent << "  " << "Item " << itemCount << ":" << std::endl;
+        this->DumpDataset( *seqIter, indent + "  " );
+      }
+    }
     else
-      std::cout << "<no string>";
+    {
+      std::cout << " string:";
+      if (canBeString)
+        std::cout << "'" << stringValue << "'";
+      else
+        std::cout << "<no string>";
 
-    std::cout << " double:";
-    if (canBeDouble)
-      std::cout << doubleValue;
+      std::cout << " double:";
+      if (canBeDouble)
+        std::cout << doubleValue;
+      else
+        std::cout << "<no double>";
+
+      std::cout << std::endl;;
+    }
+  }
+
+  if (indent.empty()) // this is for debugging only!
+  {
+    std::string imageType;
+    if ( dataset->GetAttributeValueAsString(0x008, 0x008,imageType) )
+    {
+      std::cout << "Image Type: " << imageType << std::endl;
+    }
     else
-      std::cout << "<no double>";
+    {
+      std::cout << "Image Type: <not readable>" << std::endl;
+    }
 
-    std::cout << std::endl;;
-  }
-
-  std::string imageType;
-  if ( image->GetAttributeValueAsString(0x008, 0x008,imageType) )
-  {
-    std::cout << "Image Type: " << imageType << std::endl;
-  }
-  else
-  {
-    std::cout << "Image Type: <not readable>" << std::endl;
-  }
-
-  std::list<std::string> imageTypeComponents;
-  if ( image->GetAttributeValueAsStrings(0x008, 0x008,imageTypeComponents) )
-  {
-    std::cout << "Image Type [array]: ";
-    for ( std::list<std::string>::const_iterator i = imageTypeComponents.begin();
+    std::list<std::string> imageTypeComponents;
+    if ( dataset->GetAttributeValueAsStrings(0x008, 0x008,imageTypeComponents) )
+    {
+      std::cout << "Image Type [array]: ";
+      for ( std::list<std::string>::const_iterator i = imageTypeComponents.begin();
           i != imageTypeComponents.end();
           ++i )
-    {
-      std::cout << *i << " ";
+      {
+        std::cout << *i << " ";
+      }
+      std::cout << std::endl;
     }
-    std::cout << std::endl;
-  }
-  else
-  {
-    std::cout << "Image Type [array]: <not readable>" << std::endl;
-  }
+    else
+    {
+      std::cout << "Image Type [array]: <not readable>" << std::endl;
+    }
 
-  double imageOrientationFirst;
-  if ( image->GetAttributeValueAsDouble(0x020, 0x037,imageOrientationFirst) )
-  {
-    std::cout << "Image Orientation [first]: " << imageOrientationFirst << std::endl;
-  }
-  else
-  {
-    std::cout << "Image Type [first]: <not readable>" << std::endl;
-  }
+    double imageOrientationFirst;
+    if ( dataset->GetAttributeValueAsDouble(0x020, 0x037,imageOrientationFirst) )
+    {
+      std::cout << "Image Orientation [first]: " << imageOrientationFirst << std::endl;
+    }
+    else
+    {
+      std::cout << "Image Type [first]: <not readable>" << std::endl;
+    }
 
 
-  std::list<double> imageOrientationPatient;
-  if ( image->GetAttributeValueAsDoubles(0x020, 0x037,imageOrientationPatient) )
-  {
-    std::cout << "Image Orientation (Patient) [array]: ";
-    for ( std::list<double>::const_iterator dimIter = imageOrientationPatient.begin();
+    std::list<double> imageOrientationPatient;
+    if ( dataset->GetAttributeValueAsDoubles(0x020, 0x037,imageOrientationPatient) )
+    {
+      std::cout << "Image Orientation (Patient) [array]: ";
+      for ( std::list<double>::const_iterator dimIter = imageOrientationPatient.begin();
           dimIter != imageOrientationPatient.end();
           ++dimIter )
-    {
-      std::cout << *dimIter << " ";
+      {
+        std::cout << *dimIter << " ";
+      }
+      std::cout << std::endl;
     }
-    std::cout << std::endl;
-  }
-  else
-  {
-    std::cout << "Image Orientation (Patient): <not readable>" << std::endl;
+    else
+    {
+      std::cout << "Image Orientation (Patient): <not readable>" << std::endl;
+    }
   }
 }
 
@@ -253,7 +274,7 @@ void QmitkDicomView::FirstSeriesLoadingResultAvailable()
 
   std::cout << "============== BEGIN First image attributes ================" << std::endl;
   mitk::DICOMImage::ConstPointer firstImage = series->GetAllDICOMImages().front();
-  this->DumpImageTags(firstImage);
+  this->DumpDataset(firstImage);
   std::cout << "============== END First image attributes ================" << std::endl;
 
   m_DataNode = mitk::DataNode::New();
