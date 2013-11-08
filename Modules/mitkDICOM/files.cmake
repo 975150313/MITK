@@ -13,6 +13,8 @@ set(CPP_FILES
   DataManagement/mitkDICOMDataset.cpp
   DataManagement/mitkDICOMImage.cpp
   DataManagement/mitkDICOMSeries.cpp
+  DataManagement/mitkDICOMSeriesSortCriterion.cpp
+  DataManagement/mitkDICOMSortByTag.cpp
 
   IO/mitkDICOMSeriesReader.cpp
   IO/mitkDICOMImageReader.cpp

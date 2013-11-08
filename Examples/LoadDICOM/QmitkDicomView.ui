@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>480</height>
+    <width>793</width>
+    <height>464</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,7 +30,7 @@ width: 3px;
 margin: 0.5px;
 } </string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,4">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,1,0,0">
      <item>
@@ -82,6 +82,64 @@ margin: 0.5px;
         <string>&gt;</string>
        </property>
       </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Image Sorting</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioUndefinedSorting">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Undefined</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioInstanceNumber">
+       <property name="text">
+        <string>Slice/Instance Number</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioSliceLocation">
+       <property name="text">
+        <string>Slice Location</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioImagePositionPatient">
+       <property name="text">
+        <string>Image Position (Patient)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </item>

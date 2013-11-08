@@ -140,10 +140,12 @@ class mitk::DICOMSeriesImplementation
 
     HighLowPriorityMutexLock m_Lock;
     DICOMSeries::DICOMImageList m_DICOMImages;
+    DICOMSeriesSortCriterion::ConstPointer m_SortCriterion;
 
     DICOMSeriesImplementation(DICOMSeries* object):m_Object(object){}
 
     void UpdateGeometry();
+    void UpdateImageSorting();
 
     DICOMSeries* m_Object;
 };
@@ -324,4 +326,38 @@ mitk::DICOMSeriesImplementation
   */
 
   m_Object->SetGeometry( slicedGeometry );
+}
+
+struct myLess
+{
+  myLess(mitk::DICOMSeriesSortCriterion::ConstPointer compare) : m_Compare(compare) {}
+  mitk::DICOMSeriesSortCriterion::ConstPointer m_Compare;
+
+  bool operator() (const mitk::DICOMImage::Pointer& left, const mitk::DICOMImage::Pointer& right)
+  {
+    return m_Compare->LeftImageIsLessThanRightImage(left.GetPointer(),right.GetPointer());
+  }
+};
+
+void
+mitk::DICOMSeriesImplementation
+::UpdateImageSorting()
+{
+  DICOMSeriesImplementation::MutexLocker locker(this->m_Lock.GetLowPriorityMutexLock());
+  MITK_INFO << "Resort images...";
+  if (this->m_SortCriterion.IsNotNull())
+  {
+    std::sort( this->m_DICOMImages.begin(), this->m_DICOMImages.end(), myLess(this->m_SortCriterion) );
+  }
+}
+
+void
+mitk::DICOMSeries
+::SetSortCriterion(const DICOMSeriesSortCriterion::ConstPointer sorting)
+{
+  {
+    DICOMSeriesImplementation::MutexLocker locker(p->m_Lock.GetLowPriorityMutexLock());
+    p->m_SortCriterion = sorting;
+  }
+  p->UpdateImageSorting();
 }

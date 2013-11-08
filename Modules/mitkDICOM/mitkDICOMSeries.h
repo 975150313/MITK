@@ -18,6 +18,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #define mitkDICOMSeries_h
 
 #include "mitkDICOMImage.h"
+#include "mitkDICOMSeriesSortCriterion.h" // implmement less(dataset1,dataset2) or (image1,image2)??
 
 #include "mitkBaseData.h"
 
@@ -61,6 +62,9 @@ class mitkDICOM_EXPORT DICOMSeries : public BaseData
     void AddDICOMImage( DICOMImage::Pointer image );
     unsigned int GetNumberOfDICOMImages() const;
     ConstDICOMImageList GetAllDICOMImages() const;
+
+    // slice sorting
+    void SetSortCriterion(const DICOMSeriesSortCriterion::ConstPointer sorting);
 
     // from BaseData
     virtual void SetRequestedRegionToLargestPossibleRegion();

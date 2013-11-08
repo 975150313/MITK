@@ -32,7 +32,7 @@ mitk::DICOMImage::DICOMImage()
 }
 
 mitk::DICOMImage::DICOMImage(const DICOMImage& other)
-:DICOMDataset()
+:DICOMDataset(other)
 ,p(new DICOMImageImplementation)
 {
   this->p = other.p;

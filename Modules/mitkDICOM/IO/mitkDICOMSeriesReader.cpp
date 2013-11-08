@@ -167,7 +167,7 @@ mitk::DICOMSeriesReaderImplementation
   // as long as there are more inputs. terminates after the last input.
 
   itk::MultiThreader::ThreadInfoStruct* info = static_cast<itk::MultiThreader::ThreadInfoStruct*>(infoIn);
-  itk::ThreadIdType tnum = info->ThreadID;
+  //itk::ThreadIdType tnum = info->ThreadID;
   DICOMSeriesReaderImplementation* reader = static_cast<DICOMSeriesReaderImplementation*>(info->UserData);
 
   std::string filename;
@@ -175,6 +175,9 @@ mitk::DICOMSeriesReaderImplementation
   {
     reader->ProcessFile( filename );
   }
+#ifndef WIN32
+  return 0; // removes warning about returning nothing from here
+#endif
 }
 
 
