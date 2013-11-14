@@ -16,6 +16,9 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkDICOMDataset.h"
 
+#include <iostream>
+#include <iomanip>
+
 class mitk::DICOMDatasetImplementation
 {
   public:
@@ -67,9 +70,133 @@ mitk::DICOMDataset
   std::cout << "DICOMDataset dump:" << std::endl;
   if (p->m_InternalDataset.IsNotNull())
   {
-    p->m_InternalDataset->PrintToStdOut();
+    DumpDataset( p->m_InternalDataset );
   }
 }
+
+template< typename T >
+std::string int_to_hex( T i )
+{
+  std::stringstream stream;
+  stream //<< "0x"
+    << std::setfill ('0') << std::setw(4) << std::hex << i;
+  return stream.str();
+}
+
+void
+mitk::DICOMDataset
+::DumpDataset( const mitk::DICOMDataset* dataset, const std::string& indent )
+{
+  //dataset->PrintToStdOut(); // GDCM dump
+  assert(dataset);
+
+  mitk::DICOMDataset::TagList tags = dataset->GetTags();
+  for (mitk::DICOMDataset::TagList::const_iterator tagIter = tags.begin();
+       tagIter != tags.end();
+       ++tagIter)
+  {
+    int gi = tagIter->first;
+    int ei = tagIter->second;
+    std::string gs = int_to_hex( gi );
+    std::string es = int_to_hex( ei );
+    std::string vrs = dataset->GetVR(gi,ei);
+    std::string stringValue;
+    double doubleValue;
+    bool canBeString = dataset->GetAttributeValueAsString(gi,ei,stringValue);
+    bool canBeDouble = dataset->GetAttributeValueAsDouble(gi,ei,doubleValue);
+    mitk::DICOMDataset::Sequence sequenceValue;
+    bool isSequence = dataset->GetAttributeValueAsSequence(gi,ei,sequenceValue);
+    std::cout << indent;
+    std::cout << "(" << gs << "," << es << "): ";
+    std::cout << "[" << vrs << "]: ";
+    if (isSequence)
+    {
+      std::cout << " sequence:" << std::endl;
+      unsigned int itemCount = 1;
+      for (mitk::DICOMDataset::Sequence::const_iterator seqIter = sequenceValue.begin();
+           seqIter != sequenceValue.end();
+           ++seqIter, ++itemCount)
+      {
+        std::cout << indent << "  " << "Item " << itemCount << ":" << std::endl;
+        DumpDataset( *seqIter, indent + "  " ); // recurse
+      }
+    }
+    else
+    {
+      if (canBeDouble)
+      {
+        std::cout << doubleValue << std::endl;
+      }
+      else if (canBeString)
+      {
+        std::cout << "'" << stringValue << "'" << std::endl;
+      }
+      else
+      {
+        std::cout << "<Unknown attribute type>" << std::endl;
+      }
+    }
+  }
+
+  if (indent.empty()) // this is for debugging only!
+  {
+    std::string imageType;
+    if ( dataset->GetAttributeValueAsString(0x008, 0x008,imageType) )
+    {
+      std::cout << "Image Type: " << imageType << std::endl;
+    }
+    else
+    {
+      std::cout << "Image Type: <not readable>" << std::endl;
+    }
+
+    std::list<std::string> imageTypeComponents;
+    if ( dataset->GetAttributeValueAsStrings(0x008, 0x008,imageTypeComponents) )
+    {
+      std::cout << "Image Type [array]: ";
+      for ( std::list<std::string>::const_iterator i = imageTypeComponents.begin();
+          i != imageTypeComponents.end();
+          ++i )
+      {
+        std::cout << *i << " ";
+      }
+      std::cout << std::endl;
+    }
+    else
+    {
+      std::cout << "Image Type [array]: <not readable>" << std::endl;
+    }
+
+    double imageOrientationFirst;
+    if ( dataset->GetAttributeValueAsDouble(0x020, 0x037,imageOrientationFirst) )
+    {
+      std::cout << "Image Orientation [first]: " << imageOrientationFirst << std::endl;
+    }
+    else
+    {
+      std::cout << "Image Type [first]: <not readable>" << std::endl;
+    }
+
+
+    std::list<double> imageOrientationPatient;
+    if ( dataset->GetAttributeValueAsDoubles(0x020, 0x037,imageOrientationPatient) )
+    {
+      std::cout << "Image Orientation (Patient) [array]: ";
+      for ( std::list<double>::const_iterator dimIter = imageOrientationPatient.begin();
+          dimIter != imageOrientationPatient.end();
+          ++dimIter )
+      {
+        std::cout << *dimIter << " ";
+      }
+      std::cout << std::endl;
+    }
+    else
+    {
+      std::cout << "Image Orientation (Patient): <not readable>" << std::endl;
+    }
+  }
+}
+
 
 void
 mitk::DICOMDataset

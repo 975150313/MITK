@@ -93,37 +93,83 @@ std::string
 mitk::DICOMDatasetGDCM
 ::GetVR(int group, int element) const
 {
-  // this takes the tag that was read, does not look up in a dictionary
-  const gdcm::Tag tag(group, element);
-  if (m_GDCMDataset.FindDataElement(tag) )
+  gdcm::VR vr = this->GetVRGDCM(group,element);
+  if (vr != gdcm::VR::INVALID)
   {
-    const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
-    const gdcm::VR& vr = dataElement.GetVR();
-
-    static const gdcm::Dict& dict = gdcm::Global::GetInstance().GetDicts().GetPublicDict();
-    std::stringstream ss;
-    ss << vr;
     try
     {
-      std::string name = dict.GetDictEntry(tag).GetName();
-      ss << ":" << name;
+      static const gdcm::Dict& dict = gdcm::Global::GetInstance().GetDicts().GetPublicDict();
+      std::string name = dict.GetDictEntry( gdcm::Tag(group,element) ).GetName();
+
+      std::stringstream ss;
+      ss << name << " - " << vr;
+      return ss.str();
     }
     catch(...) { }
-    return ss.str();
   }
-  else
+
+  return "??";
+}
+
+const gdcm::VR
+mitk::DICOMDatasetGDCM
+::GetVRGDCM(int group, int element) const
+{
+  const gdcm::Tag tag(group, element);
+  try
   {
-    return "??";
+    gdcm::VR vr = gdcm::VR::INVALID;
+    if (m_GDCMDataset.FindDataElement(tag) )
+    {
+      // first try to read explicitly from read dataset
+      const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
+      vr = dataElement.GetVR();
+    }
+
+    if (vr == gdcm::VR::INVALID)
+    {
+      // if dataset does not tell, then we check the dictionary
+      static const gdcm::Dict& dict = gdcm::Global::GetInstance().GetDicts().GetPublicDict();
+      vr = dict.GetDictEntry(tag).GetVR();
+    }
+    return vr;
+  }
+  catch(...)
+  {
+    return gdcm::VR::INVALID;
   }
 }
 
+// TODO move helper functions somewhere better
 
-// TODO move to private class
-std::list<std::string> split(const std::string &s, char delim) {
+// from Stack Overflow: http://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
+// trim from start
+static inline std::string &ltrim(std::string &s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+  return s;
+}
+
+// trim from end
+static inline std::string &rtrim(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+  return s;
+}
+
+// trim from both ends
+static inline std::string &trim(std::string &s) {
+  return ltrim(rtrim(s));
+}
+
+// from Stack Overflow: http://stackoverflow.com/questions/236129/how-to-split-a-string-in-c
+std::list<std::string> split(const std::string &s, char delim,bool removeWhitespace) {
   std::list<std::string> elems;
   std::stringstream ss(s);
   std::string item;
   while (std::getline(ss, item, delim)) {
+    if (removeWhitespace)
+    {
+      item = trim(item);
+    }
     elems.push_back(item);
   }
   return elems;
@@ -144,7 +190,8 @@ mitk::DICOMDatasetGDCM
       return true; // there WAS something, but empty!
     }
 
-    const gdcm::VR& vr = dataElement.GetVR();
+    const gdcm::VR& vr = this->GetVRGDCM(group,element);
+
     std::stringstream ss;
     switch (vr)
     {
@@ -207,7 +254,8 @@ mitk::DICOMDatasetGDCM
       return true; // there WAS something, but empty!
     }
 
-    const gdcm::VR& vr = dataElement.GetVR();
+    const gdcm::VR& vr = this->GetVRGDCM(group,element);
+
     std::stringstream ss;
     switch (vr)
     {
@@ -239,7 +287,7 @@ mitk::DICOMDatasetGDCM
       case gdcm::VR::UL:
         {
           dataElement.GetValue().Print(ss);
-          result_values = split(ss.str(), '\\');
+          result_values = split(ss.str(), '\\', false);
           break;
         }
       default:
@@ -287,7 +335,8 @@ mitk::DICOMDatasetGDCM
       return true; // there WAS something, but empty!
     }
 
-    const gdcm::VR& vr = dataElement.GetVR();
+    const gdcm::VR& vr = this->GetVRGDCM(group,element);
+
     std::stringstream ss;
     switch (vr)
     {
@@ -295,22 +344,29 @@ mitk::DICOMDatasetGDCM
       case gdcm::VR::IS:
         {
           dataElement.GetValue().Print(ss);
-          std::list<std::string> numberstrings = split(ss.str(), '\\');
+          std::list<std::string> numberstrings = split(ss.str(), '\\', true);
           for (std::list<std::string>::iterator sIter = numberstrings.begin();
               sIter != numberstrings.end();
               ++sIter)
           {
-            double d = ::atof( sIter->c_str() );
-            // TODO error handling?
-            result_values.push_back(d);
+            char* e((char*)1);
+            double d = std::strtod( sIter->c_str(), &e );
+            if (*e != 0)
+            {
+              // error
+              return false;
+            }
+            else
+            {
+              // TODO error handling?
+              result_values.push_back(d);
+            }
           }
-          break;
+          return true; // could convert
         }
       default:
         return false; // this is error handling
     }
-
-    return true; // optimistic assumption
   }
 
   return false;
@@ -323,13 +379,14 @@ mitk::DICOMDatasetGDCM
   const gdcm::Tag tag(group, element);
   if (m_GDCMDataset.FindDataElement(tag) )
   {
-    const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
-    const gdcm::VR& vr = dataElement.GetVR();
+    const gdcm::VR& vr = this->GetVRGDCM(group,element);
+
     std::stringstream ss;
     switch (vr)
     {
       case gdcm::VR::SQ:
         {
+          const gdcm::DataElement& dataElement = m_GDCMDataset.GetDataElement(tag);
           gdcm::SmartPointer<gdcm::SequenceOfItems> sequence = dataElement.GetValueAsSQ();
           if (sequence)
           {

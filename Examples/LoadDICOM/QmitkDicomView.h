@@ -21,6 +21,7 @@
 #include "mitkRenderingManager.h"
 #include "mitkStandaloneDataStorage.h"
 #include "mitkDisplayInteractor.h"
+#include "mitkDICOMSeriesSortCriterion.h"
 
 #include "QmitkRenderWindow.h"
 
@@ -81,6 +82,9 @@ class QmitkDicomView : public QWidget
     void ReportProgressFromReader();
     void ProcessModifiedDataNode();
 
+    /** Checks signal sender! */
+    void SelectSortCriterion(bool checked);
+
     void ReinitViewToContainEverything(mitk::DataNode* node = NULL, bool really = false);
 
   protected:
@@ -100,6 +104,8 @@ class QmitkDicomView : public QWidget
     mitk::RenderingManager::Pointer m_RenderingManager;
     QmitkRenderWindow* m_RenderWindow;
     mitk::DisplayInteractor::Pointer m_Scroller;
+
+    QMap< QObject*, mitk::DICOMSeriesSortCriterion::ConstPointer > m_SortCriteria;
 
     unsigned long m_ProgressCallback;
     unsigned long m_ModifiedCallback;

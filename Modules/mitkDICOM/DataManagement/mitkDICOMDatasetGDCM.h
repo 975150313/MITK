@@ -63,6 +63,9 @@ class DICOMDatasetGDCM : public DICOMDataset
     DICOMDatasetGDCM(const DICOMDatasetGDCM& other);
     DICOMDatasetGDCM& operator=(const DICOMDatasetGDCM& other);
 
+
+    const gdcm::VR GetVRGDCM(int group, int element) const;
+
   private:
 
     bool m_Initialized;

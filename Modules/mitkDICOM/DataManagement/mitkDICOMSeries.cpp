@@ -344,7 +344,6 @@ mitk::DICOMSeriesImplementation
 ::UpdateImageSorting()
 {
   DICOMSeriesImplementation::MutexLocker locker(this->m_Lock.GetLowPriorityMutexLock());
-  MITK_INFO << "Resort images...";
   if (this->m_SortCriterion.IsNotNull())
   {
     std::sort( this->m_DICOMImages.begin(), this->m_DICOMImages.end(), myLess(this->m_SortCriterion) );

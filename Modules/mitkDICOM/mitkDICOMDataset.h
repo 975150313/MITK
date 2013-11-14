@@ -69,6 +69,8 @@ class mitkDICOM_EXPORT DICOMDataset : public itk::LightObject
     DICOMDataset(const DICOMDataset& other);
     DICOMDataset& operator=(const DICOMDataset& other);
 
+    static void DumpDataset( const DICOMDataset* dataset, const std::string& indent = "" );
+
   private:
 
     DICOMDatasetImplementation* p;
