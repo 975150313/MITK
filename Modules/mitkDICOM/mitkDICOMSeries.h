@@ -72,6 +72,8 @@ class mitkDICOM_EXPORT DICOMSeries : public BaseData
     virtual bool VerifyRequestedRegion();
     virtual void SetRequestedRegion(const itk::DataObject *data);
 
+    virtual void Print(std::ostream& os) const;
+
   protected:
 
     DICOMSeries();

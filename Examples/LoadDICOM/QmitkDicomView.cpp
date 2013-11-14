@@ -379,6 +379,7 @@ void QmitkDicomView::SelectSortCriterion(bool checked)
     {
       MITK_INFO << "Change sorting to mode defined by " << qPrintable( sender()->objectName() );
       series->SetSortCriterion( criterion );
+      series->Print( std::cout );
       this->ReinitViewToContainEverything( m_DataNode, true );
     }
   }

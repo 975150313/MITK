@@ -343,11 +343,15 @@ void
 mitk::DICOMSeriesImplementation
 ::UpdateImageSorting()
 {
-  DICOMSeriesImplementation::MutexLocker locker(this->m_Lock.GetLowPriorityMutexLock());
-  if (this->m_SortCriterion.IsNotNull())
   {
-    std::sort( this->m_DICOMImages.begin(), this->m_DICOMImages.end(), myLess(this->m_SortCriterion) );
+    DICOMSeriesImplementation::MutexLocker locker(this->m_Lock.GetLowPriorityMutexLock());
+    if (this->m_SortCriterion.IsNotNull())
+    {
+      std::sort( this->m_DICOMImages.begin(), this->m_DICOMImages.end(), myLess(this->m_SortCriterion) );
+    }
+    this->UpdateGeometry();
   }
+  m_Object->Modified();
 }
 
 void
@@ -359,4 +363,39 @@ mitk::DICOMSeries
     p->m_SortCriterion = sorting;
   }
   p->UpdateImageSorting();
+}
+
+void
+mitk::DICOMSeries
+::Print(std::ostream& os) const
+{
+  os << "Series at " << (void*)this << ":" << std::endl;
+  os << "  Number of images: " << p->m_DICOMImages.size() << std::endl;
+
+  unsigned int sliceNumber = 0;
+  for (DICOMSeries::DICOMImageList::iterator iter = p->m_DICOMImages.begin();
+       iter != p->m_DICOMImages.end();
+       ++iter, ++sliceNumber)
+  {
+    if (iter->IsNotNull())
+    {
+      std::string instanceNumber;
+      std::string sliceLocation;
+      std::string imagePositionPatient;
+      std::string imageOrientationPatient;
+      (*iter)->GetAttributeValueAsString(0x0020,0x0013, instanceNumber);
+      (*iter)->GetAttributeValueAsString(0x0020,0x1041, sliceLocation);
+      (*iter)->GetAttributeValueAsString(0x0020,0x0032, imagePositionPatient);
+      (*iter)->GetAttributeValueAsString(0x0020,0x0037, imageOrientationPatient);
+
+      std::stringstream imageSummary;
+      imageSummary << "IN '" << instanceNumber << "' SL '" << sliceLocation << "' position '" << imagePositionPatient << "' orientation '" << imageOrientationPatient << "'";
+
+      os << "    Image " << sliceNumber << ": " << imageSummary.str() << std::endl;
+    }
+    else
+    {
+      os << "    Image " << sliceNumber << ": 0x0 (not the intended use, will cause problems)"<< std::endl;
+    }
+  }
 }

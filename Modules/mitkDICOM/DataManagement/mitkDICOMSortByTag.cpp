@@ -105,7 +105,6 @@ mitk::DICOMSortByTag
 
     if (leftIsDouble && rightIsDouble)
     {
-      MITK_INFO << "Compare double " << doubleLeft << " against " << doubleRight;
       return p->m_AscendingOrder ? doubleLeft < doubleRight : doubleRight < doubleLeft;
     }
     else
@@ -122,9 +121,9 @@ mitk::DICOMSortByTag
 
       if (leftIsString && rightIsString)
       {
-        MITK_INFO << "Compare string " << stringLeft << " against " << stringRight;
         // TODO! return p->m_AscendingOrder ? stringLeft < doubleRight : doubleRight < doubleLeft;
-        return p->m_AscendingOrder ? left < right : right < left;
+        MITK_INFO << "Compare memory addresses (should be strings)" << left << " against " << right;
+        return p->m_AscendingOrder ? left < right : right < left; // < these are addresses!
       }
       else
       {
