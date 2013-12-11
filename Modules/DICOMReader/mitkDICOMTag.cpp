@@ -33,6 +33,17 @@ mitk::DICOMTag
 {
 }
 
+bool
+mitk::DICOMTag
+::operator==(const DICOMTag& other) const
+{
+  return
+    m_Group == other.m_Group &&
+    m_Element == other.m_Element
+    ;
+}
+
+
 mitk::DICOMTag&
 mitk::DICOMTag
 ::operator=(const DICOMTag& other)
@@ -45,14 +56,14 @@ mitk::DICOMTag
   return *this;
 }
 
-unsigned int 
+unsigned int
 mitk::DICOMTag
 ::GetGroup() const
 {
   return m_Group;
 }
 
-unsigned int 
+unsigned int
 mitk::DICOMTag
 ::GetElement() const
 {
