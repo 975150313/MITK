@@ -163,7 +163,7 @@ mitk::DICOMFileReader
     throw std::invalid_argument( ss.str() );
   }
 }
-    
+
 bool
 mitk::DICOMFileReader
 ::IsDICOM(const std::string& filename)

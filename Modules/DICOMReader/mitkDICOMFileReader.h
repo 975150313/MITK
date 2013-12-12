@@ -67,7 +67,7 @@ class DICOMReader_EXPORT DICOMFileReader : public itk::LightObject
     void ClearOutputs();
     void SetNumberOfOutputs(unsigned int numberOfOutputs);
     void SetOutput(unsigned int index, const DICOMImageBlockDescriptor& output);
-    
+
     DICOMImageBlockDescriptor& InternalGetOutput(unsigned int index);
 
   private:

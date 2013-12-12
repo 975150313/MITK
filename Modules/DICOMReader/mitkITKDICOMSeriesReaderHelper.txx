@@ -23,13 +23,13 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 
 template <typename PixelType>
-mitk::Image::Pointer 
+mitk::Image::Pointer
 mitk::ITKDICOMSeriesReaderHelper
-::LoadDICOMByITK( 
-    const StringContainer& filenames, 
-    bool correctTilt, 
-    const GantryTiltInformation& tiltInfo, 
-    DcmIoType::Pointer& io, 
+::LoadDICOMByITK(
+    const StringContainer& filenames,
+    bool correctTilt,
+    const GantryTiltInformation& tiltInfo,
+    DcmIoType::Pointer& io,
     Image::Pointer preLoadedImageBlock )
 {
   /******** Normal Case, 3D (also for GDCM < 2 usable) ***************/
@@ -42,11 +42,11 @@ mitk::ITKDICOMSeriesReaderHelper
   typename ReaderType::Pointer reader = ReaderType::New();
 
   reader->SetImageIO(io);
-  reader->ReverseOrderOff();
 
   if (preLoadedImageBlock.IsNull())
   {
     reader->SetFileNames(filenames);
+    reader->ReverseOrderOff();
     reader->Update();
     typename ImageType::Pointer readVolume = reader->GetOutput();
 

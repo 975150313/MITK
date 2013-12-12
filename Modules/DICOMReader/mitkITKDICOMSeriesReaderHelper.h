@@ -30,7 +30,7 @@ class ITKDICOMSeriesReaderHelper
   public:
 
     typedef std::vector<std::string> StringContainer;
-  
+
     typedef itk::GDCMImageIO DcmIoType; // TODO remove, we are NOT flexible here
 
 
@@ -43,10 +43,10 @@ class ITKDICOMSeriesReaderHelper
 
     template <typename PixelType>
     Image::Pointer
-    LoadDICOMByITK( const StringContainer& filenames, 
-                    bool correctTilt, 
-                    const GantryTiltInformation& tiltInfo, 
-                    DcmIoType::Pointer& io, 
+    LoadDICOMByITK( const StringContainer& filenames,
+                    bool correctTilt,
+                    const GantryTiltInformation& tiltInfo,
+                    DcmIoType::Pointer& io,
                     Image::Pointer preLoadedImageBlock );
 
 };

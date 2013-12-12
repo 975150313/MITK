@@ -92,6 +92,6 @@ mitk::ITKDICOMSeriesReaderHelper
   {
     MITK_ERROR << "Unspecified error encountered when loading DICOM series.";
   }
-      
+
   return NULL;
 }
