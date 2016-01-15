@@ -20,6 +20,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkBasePropertySerializer.h"
 
 #include "mitkLevelWindowProperty.h"
+#include "mitkFloatToString.h"
 
 namespace mitk
 {
@@ -51,18 +52,18 @@ class LevelWindowPropertySerializer : public BasePropertySerializer
 
         auto  child = new TiXmlElement("CurrentSettings");
         element->LinkEndChild( child );
-          child->SetDoubleAttribute("level", lw.GetLevel());
-          child->SetDoubleAttribute("window", lw.GetWindow());
+          child->SetAttribute("level", DoubleToString(lw.GetLevel()));
+          child->SetAttribute("window", DoubleToString(lw.GetWindow()));
 
                       child = new TiXmlElement("DefaultSettings");
         element->LinkEndChild( child );
-          child->SetDoubleAttribute("level", lw.GetDefaultLevel());
-          child->SetDoubleAttribute("window", lw.GetDefaultWindow());
+          child->SetAttribute("level", DoubleToString(lw.GetDefaultLevel()));
+          child->SetAttribute("window", DoubleToString(lw.GetDefaultWindow()));
 
                       child = new TiXmlElement("CurrentRange");
         element->LinkEndChild( child );
-          child->SetDoubleAttribute("min", lw.GetRangeMin());
-          child->SetDoubleAttribute("max", lw.GetRangeMax());
+          child->SetAttribute("min", DoubleToString(lw.GetRangeMin()));
+          child->SetAttribute("max", DoubleToString(lw.GetRangeMax()));
 
 
         return element;
@@ -81,28 +82,31 @@ class LevelWindowPropertySerializer : public BasePropertySerializer
       if (element->Attribute("isFloatingImage"))
         isFloatingImage = std::string(element->Attribute("isFloatingImage")) == "true";
 
-      double level = 0;
-      double window = 0;
+      std::string level_string;
+      std::string window_string;
       TiXmlElement* child = element->FirstChildElement("CurrentSettings");
-        if ( child->QueryDoubleAttribute( "level", &level ) != TIXML_SUCCESS ) return nullptr;
-        if ( child->QueryDoubleAttribute( "window", &window ) != TIXML_SUCCESS ) return nullptr;
+        if ( child->QueryStringAttribute( "level", &level_string ) != TIXML_SUCCESS ) return nullptr;
+        if ( child->QueryStringAttribute( "window", &window_string ) != TIXML_SUCCESS ) return nullptr;
 
-      double defaultLevel;
-      double defaultWindow;
+      std::string defaultLevel_string;
+      std::string defaultWindow_string;
                     child = element->FirstChildElement("DefaultSettings");
-        if ( child->QueryDoubleAttribute( "level", &defaultLevel ) != TIXML_SUCCESS ) return nullptr;
-        if ( child->QueryDoubleAttribute( "window", &defaultWindow ) != TIXML_SUCCESS ) return nullptr;
+        if ( child->QueryStringAttribute( "level", &defaultLevel_string ) != TIXML_SUCCESS ) return nullptr;
+        if ( child->QueryStringAttribute( "window", &defaultWindow_string ) != TIXML_SUCCESS ) return nullptr;
 
-      double minRange;
-      double maxRange;
+      std::string minRange_string;
+      std::string maxRange_string;
                     child = element->FirstChildElement("CurrentRange");
-        if ( child->QueryDoubleAttribute( "min", &minRange ) != TIXML_SUCCESS ) return nullptr;
-        if ( child->QueryDoubleAttribute( "max", &maxRange ) != TIXML_SUCCESS ) return nullptr;
+        if ( child->QueryStringAttribute( "min", &minRange_string ) != TIXML_SUCCESS ) return nullptr;
+        if ( child->QueryStringAttribute( "max", &maxRange_string ) != TIXML_SUCCESS ) return nullptr;
 
       LevelWindow lw;
-      lw.SetRangeMinMax( minRange, maxRange );
-      lw.SetDefaultLevelWindow( defaultLevel, defaultWindow );
-      lw.SetLevelWindow( level, window );
+      lw.SetRangeMinMax( StringToDouble(minRange_string),
+                         StringToDouble(maxRange_string) );
+      lw.SetDefaultLevelWindow( StringToDouble(defaultLevel_string),
+                                StringToDouble(defaultWindow_string) );
+      lw.SetLevelWindow( StringToDouble(level_string),
+                         StringToDouble(window_string) );
       lw.SetFixed( isFixed );
       lw.SetFloatingValues(isFloatingImage);
 
