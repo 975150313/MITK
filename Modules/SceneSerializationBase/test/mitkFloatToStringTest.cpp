@@ -56,7 +56,6 @@ public:
       float minus_inf = mitk::StringToFloat("-inf");
 
       CPPUNIT_ASSERT_MESSAGE("nan==nan must be false", !(nan==nan) );
-      float ref_minus_inf = -std::numeric_limits<float>::infinity();
       CPPUNIT_ASSERT_EQUAL( std::numeric_limits<float>::infinity(), inf );
       CPPUNIT_ASSERT_EQUAL( -std::numeric_limits<float>::infinity(), minus_inf );
 
@@ -77,7 +76,6 @@ public:
       double minus_inf = mitk::StringToDouble("-inf");
 
       CPPUNIT_ASSERT_MESSAGE("nan==nan must be false", !(nan==nan) );
-      double ref_minus_inf = -std::numeric_limits<double>::infinity();
       CPPUNIT_ASSERT_EQUAL( std::numeric_limits<double>::infinity(), inf );
       CPPUNIT_ASSERT_EQUAL( -std::numeric_limits<double>::infinity(), minus_inf );
 
