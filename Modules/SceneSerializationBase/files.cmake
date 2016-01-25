@@ -11,7 +11,6 @@ set(CPP_FILES
   mitkDoublePropertySerializer.cpp
   mitkEnumerationPropertySerializer.cpp
   mitkEnumerationSubclassesSerializer.cpp
-  mitkFloatToString.cpp
   mitkFloatLookupTablePropertySerializer.cpp
   mitkFloatPropertySerializer.cpp
   mitkGroupTagPropertySerializer.cpp

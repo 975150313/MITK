@@ -17,7 +17,7 @@ MITK_CREATE_MODULE(
     PUBLIC  ITK|ITKTransform+ITKImageGrid+ITKImageFeature
     # We privately use/link all ITK modules in order to support all IO, Transform, etc.
     # factories from ITK which are registered "automatically" via a factory manager.
-    PRIVATE ITK
+    PRIVATE ITK Boost
     PUBLIC  VTK|vtkFiltersTexture+vtkFiltersParallel+vtkImagingStencil+vtkImagingMath+vtkInteractionStyle+vtkRenderingOpenGL+vtkRenderingVolumeOpenGL+vtkRenderingFreeTypeOpenGL+vtkRenderingLabel+vtkInteractionWidgets+vtkIOGeometry+vtkIOXML
   WARNINGS_AS_ERRORS
   SUBPROJECTS MITK-Core

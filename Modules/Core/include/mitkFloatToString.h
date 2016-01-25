@@ -17,7 +17,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #ifndef mitkFloatToString_h_included
 #define mitkFloatToString_h_included
 
-#include <MitkSceneSerializationBaseExports.h>
+#include <MitkCoreExports.h>
 
 #include <string>
 
@@ -30,12 +30,12 @@ namespace mitk
 //! \param f the number to convert
 //! \param precision the (positive) maximum number of meaningful digits to display in total
 //!                  counting both those before and those after the decimal point
-MITKSCENESERIALIZATIONBASE_EXPORT std::string FloatToString(float f, unsigned int precision = 16);
+MITKCORE_EXPORT std::string FloatToString(float f, unsigned int precision = 16);
 
 //! Converts the string to a float number.
 //! Interpret "inf" to infinity and "nan" to not-a-number
 //! \return NaN if string is not a valid float
-MITKSCENESERIALIZATIONBASE_EXPORT float StringToFloat(const std::string& s);
+MITKCORE_EXPORT float StringToFloat(const std::string& s);
 
 //! Converts the number to a string
 //! Will care to convert infinity to "inf" and not-a-number to "nan"
@@ -43,12 +43,12 @@ MITKSCENESERIALIZATIONBASE_EXPORT float StringToFloat(const std::string& s);
 //! \param f the number to convert
 //! \param precision the (positive) maximum number of meaningful digits to display in total
 //!                  counting both those before and those after the decimal point
-MITKSCENESERIALIZATIONBASE_EXPORT std::string DoubleToString(double f, unsigned int precision = 16);
+MITKCORE_EXPORT std::string DoubleToString(double f, unsigned int precision = 16);
 
 //! Converts the string to a float number.
 //! Interpret "inf" to infinity and "nan" to not-a-number
 //! \return NaN if string is not a valid double
-MITKSCENESERIALIZATIONBASE_EXPORT double StringToDouble(const std::string& s);
+MITKCORE_EXPORT double StringToDouble(const std::string& s);
 
 //! Call mitk::StringToDouble for all count elements of something that can be accessed
 //! via operator[], e.g. to fill a Point3D / Vector3D
