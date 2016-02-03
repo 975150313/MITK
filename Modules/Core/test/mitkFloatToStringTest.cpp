@@ -17,7 +17,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkTestFixture.h"
 #include "mitkTestingMacros.h"
 
-#include "mitkFloatToString.h"
+#include <boost/lexical_cast.hpp>
 
 #include <math.h>
 #include "mitkEqual.h"
@@ -29,8 +29,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <functional>
 
 //!
-//! Verifies functions FloatToString, DoubleToString and inverse
-//! functions StringToFloat, StringToDouble.
+//! Verifies boost::lexical<cast> for MITK's serialization purposes
 //!
 //! Verifies:
 //! - special numbers behavior:
@@ -42,80 +41,63 @@ See LICENSE.txt or http://www.mitk.org for details.
 class mitkFloatToStringTestSuite : public mitk::TestFixture
 {
   CPPUNIT_TEST_SUITE(mitkFloatToStringTestSuite);
-    MITK_TEST(ConfirmStringValues);
-    MITK_TEST(TestConversions);
-    MITK_TEST(TestPrecisionParameter);
+    MITK_TEST(ConfirmStringValues<float>);
+    MITK_TEST(ConfirmStringValues<double>);
+    MITK_TEST(TestConversions<float>);
+    MITK_TEST(TestConversions<double>);
   CPPUNIT_TEST_SUITE_END();
 
 public:
 
   template <typename DATATYPE>
-  void ConfirmNumberToString(DATATYPE number,
-                             const std::string& s,
-                             std::function<std::string(DATATYPE)> to_string)
+  void ConfirmNumberToString(DATATYPE number, const std::string& s)
 
   {
-      CPPUNIT_ASSERT_EQUAL( to_string(number), s );
+      CPPUNIT_ASSERT_EQUAL( boost::lexical_cast<std::string>(number), s );
   }
 
 
   template <typename DATATYPE>
-  void ConfirmStringToNumber(const std::string& s,
-                             DATATYPE number,
-                             std::function<DATATYPE(const std::string&)> from_string)
+  void ConfirmStringToNumber(const std::string& s, DATATYPE number)
 
   {
-      CPPUNIT_ASSERT_EQUAL( number,  from_string(s) );
+      CPPUNIT_ASSERT_EQUAL( number,  boost::lexical_cast<DATATYPE>(s) );
   }
 
   template <typename DATATYPE>
-  void ConfirmStringValues(std::function<DATATYPE(const std::string&)> from_string,
-                           std::function<std::string(DATATYPE)> to_string)
+  void ConfirmStringValues()
   {
     // we want to make sure that the following strings will be accepted and returned
     // by our conversion functions. This must not change in the future to ensure compatibility
-    DATATYPE nan = from_string("nan");
+    DATATYPE nan = boost::lexical_cast<DATATYPE>("nan");
     CPPUNIT_ASSERT_MESSAGE("nan==nan must be false", !(nan==nan) );
-    nan = from_string("NAN");
+    nan = boost::lexical_cast<DATATYPE>("NAN");
     CPPUNIT_ASSERT_MESSAGE("NAN==NAN must be false", !(nan==nan) );
 
-    std::string s_nan = to_string(nan);
+    std::string s_nan = boost::lexical_cast<std::string>(nan);
     CPPUNIT_ASSERT_EQUAL(std::string("nan"), s_nan);
 
-    ConfirmStringToNumber("inf", std::numeric_limits<DATATYPE>::infinity(), from_string);
-    ConfirmStringToNumber("INF", std::numeric_limits<DATATYPE>::infinity(), from_string);
-    ConfirmStringToNumber("infinity", std::numeric_limits<DATATYPE>::infinity(), from_string);
-    ConfirmStringToNumber("INFINITY", std::numeric_limits<DATATYPE>::infinity(), from_string);
+    ConfirmStringToNumber("inf", std::numeric_limits<DATATYPE>::infinity());
+    ConfirmStringToNumber("INF", std::numeric_limits<DATATYPE>::infinity());
+    ConfirmStringToNumber("infinity", std::numeric_limits<DATATYPE>::infinity());
+    ConfirmStringToNumber("INFINITY", std::numeric_limits<DATATYPE>::infinity());
 
-    ConfirmStringToNumber("-inf", -std::numeric_limits<DATATYPE>::infinity(), from_string);
-    ConfirmStringToNumber("-INF", -std::numeric_limits<DATATYPE>::infinity(), from_string);
-    ConfirmStringToNumber("-infinity", -std::numeric_limits<DATATYPE>::infinity(), from_string);
-    ConfirmStringToNumber("-INFINITY", -std::numeric_limits<DATATYPE>::infinity(), from_string);
+    ConfirmStringToNumber("-inf", -std::numeric_limits<DATATYPE>::infinity());
+    ConfirmStringToNumber("-INF", -std::numeric_limits<DATATYPE>::infinity());
+    ConfirmStringToNumber("-infinity", -std::numeric_limits<DATATYPE>::infinity());
+    ConfirmStringToNumber("-INFINITY", -std::numeric_limits<DATATYPE>::infinity());
 
-    ConfirmNumberToString(std::numeric_limits<DATATYPE>::infinity(), "inf", to_string);
-    ConfirmNumberToString(-std::numeric_limits<DATATYPE>::infinity(), "-inf", to_string);
+    ConfirmNumberToString(std::numeric_limits<DATATYPE>::infinity(), "inf");
+    ConfirmNumberToString(-std::numeric_limits<DATATYPE>::infinity(), "-inf");
   }
-
-  void ConfirmStringValues()
-  {
-    std::function<std::string(float)> float_to_string = std::bind(mitk::FloatToString, std::placeholders::_1, 16);
-    ConfirmStringValues<float>(mitk::StringToFloat, float_to_string);
-
-    std::function<std::string(double)> double_to_string = std::bind(mitk::DoubleToString, std::placeholders::_1, 16);
-    ConfirmStringValues<double>(mitk::StringToDouble, double_to_string);
-  }
-
-
 
 
   template <typename DATATYPE>
   void CheckRoundTrip(DATATYPE number,
-                      std::function<DATATYPE(const std::string&)> from_string,
-                      std::function<std::string(DATATYPE)> to_string,
                       DATATYPE tolerance)
   {
-    std::string s = to_string(number);
-    DATATYPE number2 = from_string(s);
+    std::string s = boost::lexical_cast<std::string>(number);
+    DATATYPE number2 = boost::lexical_cast<DATATYPE>(s);
 
     CPPUNIT_ASSERT_MESSAGE(std::string("Must not parse string ") + s + " as NaN", number2 == number2);
     if (tolerance == 0)
@@ -129,81 +111,40 @@ public:
   }
 
   template <typename DATATYPE>
-  void TestConversions(std::function<DATATYPE(const std::string&)> from_string,
-                       std::function<std::string(DATATYPE)> to_string)
+  void CheckRoundTrip(const std::string& input)
   {
-    auto check_roundtrip = std::bind(&mitkFloatToStringTestSuite::CheckRoundTrip<DATATYPE>, this,
-                                    std::placeholders::_1, from_string, to_string,
-                                    std::placeholders::_2);
-
-    // we cannot test the NaN roundtrip because nan == nan will never be true
-    check_roundtrip(std::numeric_limits<DATATYPE>::infinity(), 0.0);
-    check_roundtrip(-std::numeric_limits<DATATYPE>::infinity(), 0.0);
-
-    check_roundtrip(std::numeric_limits<DATATYPE>::denorm_min(), mitk::eps);
-    check_roundtrip(std::numeric_limits<DATATYPE>::epsilon(), mitk::eps);
-    //check_roundtrip(std::numeric_limits<DATATYPE>::lowest()); parses as NaN
-    check_roundtrip(std::numeric_limits<DATATYPE>::min(), mitk::eps);
-    // max() parses as NaN. So we test a pretty big number with a _relatively_ good precision
-    check_roundtrip(std::numeric_limits<DATATYPE>::max() * 0.99,
-                    std::numeric_limits<DATATYPE>::max() * 0.0000000000001 );
-    check_roundtrip(sqrt(2), mitk::eps);
-    check_roundtrip(0.000000042, mitk::eps);
-    check_roundtrip(422345678.2345678, mitk::eps);
-    check_roundtrip(0.0, 0);
-    check_roundtrip(-0.0, 0);
-  }
-
-
-
-  void CheckRoundTrip_Float(const std::string& input)
-  {
-    float f = mitk::StringToFloat(input);
-    std::string result = mitk::FloatToString(f);
+    DATATYPE number = boost::lexical_cast<DATATYPE>(input);
+    std::string result = boost::lexical_cast<std::string>(number);
 
     // There are normal imprecisions when converting to string
     // We do only compare if the numeric values match "close enough"
-    double f2 = mitk::StringToFloat(result);
-    CPPUNIT_ASSERT(mitk::Equal(f, f2));
+    DATATYPE number2 = boost::lexical_cast<DATATYPE>(result);
+    CPPUNIT_ASSERT(mitk::Equal(number, number2));
   }
 
-  //-------------------- double --------------------
-  void CheckRoundTrip_Double(const std::string& input)
-  {
-    double d = mitk::StringToDouble(input);
-    std::string result = mitk::DoubleToString(d);
-    double d2 = mitk::StringToDouble(result);
-
-    // There are normal imprecisions when converting to string
-    // We do only compare if the numeric values match "close enough"
-    CPPUNIT_ASSERT(mitk::Equal(d, d2));
-  }
-
+  template <typename DATATYPE>
   void TestConversions()
   {
-    std::function<std::string(float)> float_to_string = std::bind(mitk::FloatToString, std::placeholders::_1, 16);
-    TestConversions<float>(mitk::StringToFloat, float_to_string);
+    // we cannot test the NaN roundtrip because nan == nan will never be true
+    CheckRoundTrip<DATATYPE>(std::numeric_limits<DATATYPE>::infinity(), 0.0);
+    CheckRoundTrip<DATATYPE>(-std::numeric_limits<DATATYPE>::infinity(), 0.0);
 
-    std::function<std::string(double)> double_to_string = std::bind(mitk::DoubleToString, std::placeholders::_1, 16);
-    TestConversions<double>(mitk::StringToDouble, double_to_string);
+    CheckRoundTrip<DATATYPE>(std::numeric_limits<DATATYPE>::denorm_min(), mitk::eps);
+    CheckRoundTrip<DATATYPE>(std::numeric_limits<DATATYPE>::epsilon(), mitk::eps);
+    CheckRoundTrip<DATATYPE>(std::numeric_limits<DATATYPE>::lowest(), mitk::eps);
+    CheckRoundTrip<DATATYPE>(std::numeric_limits<DATATYPE>::min(), mitk::eps);
+    CheckRoundTrip<DATATYPE>(std::numeric_limits<DATATYPE>::max(), mitk::eps);
+    CheckRoundTrip<DATATYPE>(sqrt(2), mitk::eps);
+    CheckRoundTrip<DATATYPE>(0.000000042, mitk::eps);
+    CheckRoundTrip<DATATYPE>(422345678.2345678, mitk::eps);
+    CheckRoundTrip<DATATYPE>(0.0, 0);
+    CheckRoundTrip<DATATYPE>(-0.0, 0);
 
+    CheckRoundTrip<DATATYPE>("1");
+    CheckRoundTrip<DATATYPE>("1.1");
+    CheckRoundTrip<DATATYPE>("1.12121212");
+    CheckRoundTrip<DATATYPE>("1.1e-2");
 
-    CheckRoundTrip_Float("1");
-    CheckRoundTrip_Float("1.1");
-    CheckRoundTrip_Float("1.12121212");
-    CheckRoundTrip_Float("1.1e-2");
-
-    CheckRoundTrip_Double("1");
-    CheckRoundTrip_Double("1.1");
-    CheckRoundTrip_Double("1.12121212");
-    CheckRoundTrip_Double("1.1e-2");
-  }
-
-  void TestPrecisionParameter()
-  {
-    CPPUNIT_ASSERT_EQUAL(std::string("5.213"), mitk::DoubleToString(5.213));
-    CPPUNIT_ASSERT_EQUAL(std::string("5"), mitk::DoubleToString(5.213, 1));
-    CPPUNIT_ASSERT_EQUAL(std::string("5.2"), mitk::DoubleToString(5.213, 2));
   }
 
 }; // class
