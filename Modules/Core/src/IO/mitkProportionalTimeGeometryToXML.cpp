@@ -19,7 +19,8 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkGeometry3DToXML.h"
 
 #include <tinyxml.h>
-#include "mitkFloatToString.h"
+
+#include <boost/lexical_cast.hpp>
 
 TiXmlElement* mitk::ProportionalTimeGeometryToXML::ToXML(const ProportionalTimeGeometry* timeGeom)
 {
@@ -32,9 +33,9 @@ TiXmlElement* mitk::ProportionalTimeGeometryToXML::ToXML(const ProportionalTimeG
   // by not writing them. The reader can then tell that absence of those values
   // means "keep the default values"
   if (timeGeom->GetFirstTimePoint() != -std::numeric_limits<TimePointType>::max())
-    timeGeomElem->SetAttribute("FirstTimePoint", DoubleToString(timeGeom->GetFirstTimePoint()));
+    timeGeomElem->SetAttribute("FirstTimePoint", boost::lexical_cast<std::string>(timeGeom->GetFirstTimePoint()));
   if (timeGeom->GetStepDuration() != std::numeric_limits<TimePointType>::infinity())
-    timeGeomElem->SetAttribute("StepDuration", DoubleToString(timeGeom->GetStepDuration()));
+    timeGeomElem->SetAttribute("StepDuration", boost::lexical_cast<std::string>(timeGeom->GetStepDuration()));
 
   for (TimeStepType t = 0; t < timeGeom->CountTimeSteps(); ++t)
   {
@@ -77,22 +78,30 @@ mitk::ProportionalTimeGeometry::Pointer mitk::ProportionalTimeGeometryToXML::Fro
   std::string firstTimePoint_s;
   TimePointType stepDuration;
   std::string stepDuration_s;
-  if (TIXML_SUCCESS == timeGeometryElement->QueryStringAttribute("FirstTimePoint", &firstTimePoint_s))
+  try
   {
-    firstTimePoint = StringToDouble(firstTimePoint_s);
-  }
-  else
-  {
-    firstTimePoint = -std::numeric_limits<TimePointType>::max();
-  }
+    if (TIXML_SUCCESS == timeGeometryElement->QueryStringAttribute("FirstTimePoint", &firstTimePoint_s))
+    {
+      firstTimePoint = boost::lexical_cast<double>(firstTimePoint_s);
+    }
+    else
+    {
+      firstTimePoint = -std::numeric_limits<TimePointType>::max();
+    }
 
-  if (TIXML_SUCCESS == timeGeometryElement->QueryStringAttribute("StepDuration", &stepDuration_s))
-  {
-    stepDuration = StringToDouble(stepDuration_s);
+    if (TIXML_SUCCESS == timeGeometryElement->QueryStringAttribute("StepDuration", &stepDuration_s))
+    {
+      stepDuration = boost::lexical_cast<double>(stepDuration_s);
+    }
+    else
+    {
+      stepDuration = std::numeric_limits<TimePointType>::infinity();
+    }
   }
-  else
+  catch (boost::bad_lexical_cast& e)
   {
-    stepDuration = std::numeric_limits<TimePointType>::infinity();
+    MITK_ERROR << "Could not parse string as number: " << e.what();
+    return nullptr;
   }
 
   // list of all geometries with their time steps

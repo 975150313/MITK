@@ -20,7 +20,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkBasePropertySerializer.h"
 
 #include "mitkProperties.h"
-#include "mitkFloatToString.h"
+#include <boost/lexical_cast.hpp>
 
 namespace mitk
 {
@@ -48,7 +48,7 @@ class FloatLookupTablePropertySerializer : public BasePropertySerializer
         {
           auto  tableEntry = new TiXmlElement("LUTValue");
           tableEntry->SetAttribute("id", it->first);
-          tableEntry->SetAttribute("value", FloatToString(it->second));
+          tableEntry->SetAttribute("value", boost::lexical_cast<std::string>(it->second));
           element->LinkEndChild( tableEntry );
         }
         return element;
@@ -70,7 +70,15 @@ class FloatLookupTablePropertySerializer : public BasePropertySerializer
         std::string value_string;
         if (child->QueryStringAttribute("value", &value_string) != TIXML_SUCCESS)
           return nullptr;
-        lut.SetTableValue(id, StringToFloat(value_string));
+        try
+        {
+          lut.SetTableValue(id, boost::lexical_cast<float>(value_string));
+        }
+        catch (boost::bad_lexical_cast& e)
+        {
+          MITK_ERROR << "Could not parse string as number: " << e.what();
+          return nullptr;
+        }
       }
       return FloatLookupTableProperty::New(lut).GetPointer();
     }

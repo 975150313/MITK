@@ -19,7 +19,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkVectorProperty.h"
 #include "mitkBasePropertySerializer.h"
-#include "mitkFloatToString.h"
+#include <boost/lexical_cast.hpp>
 
 #include <limits>
 #include <math.h>
@@ -126,7 +126,7 @@ public:
     for (unsigned int i = 0; i < orig_vector.size(); ++i)
     {
       // compare using Equal, i.e. with tolerance of mitk::eps
-      CPPUNIT_ASSERT_MESSAGE(std::string("Verifying element ") + mitk::FloatToString(i),
+      CPPUNIT_ASSERT_MESSAGE(std::string("Verifying element ") + boost::lexical_cast<std::string>(i),
                              mitk::Equal(orig_vector[i], restored_vector[i]) );
     }
   }

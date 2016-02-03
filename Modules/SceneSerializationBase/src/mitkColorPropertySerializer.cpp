@@ -20,7 +20,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkBasePropertySerializer.h"
 
 #include "mitkColorProperty.h"
-#include "mitkFloatToString.h"
+#include "mitkStringsToNumbers.h"
 
 namespace mitk
 {
@@ -39,9 +39,9 @@ class ColorPropertySerializer : public BasePropertySerializer
       {
         auto  element = new TiXmlElement("color");
         Color color = prop->GetValue();
-        element->SetAttribute("r", FloatToString(color[0]));
-        element->SetAttribute("g", FloatToString(color[1]));
-        element->SetAttribute("b", FloatToString(color[2]));
+        element->SetAttribute("r", boost::lexical_cast<std::string>(color[0]));
+        element->SetAttribute("g", boost::lexical_cast<std::string>(color[1]));
+        element->SetAttribute("b", boost::lexical_cast<std::string>(color[2]));
         return element;
       }
       else return nullptr;
@@ -56,7 +56,15 @@ class ColorPropertySerializer : public BasePropertySerializer
       if ( element->QueryStringAttribute( "g", &c_string[1] ) != TIXML_SUCCESS ) return nullptr;
       if ( element->QueryStringAttribute( "b", &c_string[2] ) != TIXML_SUCCESS ) return nullptr;
       Color c;
-      StringsToFloats(3, c_string, c);
+      try
+      {
+        StringsToNumbers<double>(3, c_string, c);
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+        MITK_ERROR << "Could not parse string as number: " << e.what();
+        return nullptr;
+      }
 
       return ColorProperty::New( c ).GetPointer();
     }

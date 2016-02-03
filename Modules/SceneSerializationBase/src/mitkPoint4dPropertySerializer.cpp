@@ -20,7 +20,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkBasePropertySerializer.h"
 
 #include "mitkProperties.h"
-#include "mitkFloatToString.h"
+#include "mitkStringsToNumbers.h"
 
 namespace mitk
 {
@@ -39,10 +39,10 @@ class Point4dPropertySerializer : public BasePropertySerializer
       {
         auto  element = new TiXmlElement("point");
         Point4D point = prop->GetValue();
-        element->SetAttribute("x", DoubleToString(point[0]));
-        element->SetAttribute("y", DoubleToString(point[1]));
-        element->SetAttribute("z", DoubleToString(point[2]));
-        element->SetAttribute("t", DoubleToString(point[3]));
+        element->SetAttribute("x", boost::lexical_cast<std::string>(point[0]));
+        element->SetAttribute("y", boost::lexical_cast<std::string>(point[1]));
+        element->SetAttribute("z", boost::lexical_cast<std::string>(point[2]));
+        element->SetAttribute("t", boost::lexical_cast<std::string>(point[3]));
         return element;
       }
       else return nullptr;
@@ -58,9 +58,16 @@ class Point4dPropertySerializer : public BasePropertySerializer
       if ( element->QueryStringAttribute( "z", &v_str[2] ) != TIXML_SUCCESS ) return nullptr;
       if ( element->QueryStringAttribute( "t", &v_str[3] ) != TIXML_SUCCESS ) return nullptr;
       Point4D v;
-      StringsToDoubles(4, v_str, v);
-
-     return Point4dProperty::New( v ).GetPointer();
+      try
+      {
+        StringsToNumbers<double>(4, v_str, v);
+      }
+      catch ( boost::bad_lexical_cast& e )
+      {
+        MITK_ERROR << "Could not parse string as number: " << e.what();
+        return nullptr;
+      }
+      return Point4dProperty::New( v ).GetPointer();
     }
 
   protected:

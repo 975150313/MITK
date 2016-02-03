@@ -21,7 +21,8 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkClippingProperty.h"
 #include "mitkNumericTypes.h"
-#include "mitkFloatToString.h"
+
+#include "mitkStringsToNumbers.h"
 
 namespace mitk
 {
@@ -43,15 +44,15 @@ class ClippingPropertySerializer : public BasePropertySerializer
           element->SetAttribute("enabled", "false");
         auto  originElement = new TiXmlElement("origin");
         const Point3D origin = prop->GetOrigin();
-        originElement->SetAttribute("x", DoubleToString(origin[0]));
-        originElement->SetAttribute("y", DoubleToString(origin[1]));
-        originElement->SetAttribute("z", DoubleToString(origin[2]));
+        originElement->SetAttribute("x", boost::lexical_cast<std::string>(origin[0]));
+        originElement->SetAttribute("y", boost::lexical_cast<std::string>(origin[1]));
+        originElement->SetAttribute("z", boost::lexical_cast<std::string>(origin[2]));
         element->LinkEndChild(originElement);
         auto  normalElement = new TiXmlElement("normal");
         const Vector3D normal = prop->GetNormal();
-        normalElement->SetAttribute("x", DoubleToString(normal[0]));
-        normalElement->SetAttribute("y", DoubleToString(normal[1]));
-        normalElement->SetAttribute("z", DoubleToString(normal[2]));
+        normalElement->SetAttribute("x", boost::lexical_cast<std::string>(normal[0]));
+        normalElement->SetAttribute("y", boost::lexical_cast<std::string>(normal[1]));
+        normalElement->SetAttribute("z", boost::lexical_cast<std::string>(normal[2]));
         element->LinkEndChild(normalElement);
         return element;
       }
@@ -76,7 +77,16 @@ class ClippingPropertySerializer : public BasePropertySerializer
       if ( originElement->QueryStringAttribute( "z", &origin_string[2] ) != TIXML_SUCCESS )
         return nullptr;
       Point3D origin;
-      StringsToDoubles(3, origin_string, origin);
+      try
+      {
+        StringsToNumbers<ScalarType>(3, origin_string, origin);
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+          MITK_ERROR << "Could not parse string as number: " << e.what();
+          return nullptr;
+      }
+
       TiXmlElement* normalElement = element->FirstChildElement("normal");
       if (normalElement == nullptr)
         return nullptr;
@@ -88,7 +98,16 @@ class ClippingPropertySerializer : public BasePropertySerializer
       if ( normalElement->QueryStringAttribute( "z", &normal_string[2] ) != TIXML_SUCCESS )
         return nullptr;
       Vector3D normal;
-      StringsToDoubles(3, normal_string, normal);
+      try
+      {
+        StringsToNumbers<ScalarType>(3, normal_string, normal);
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+          MITK_ERROR << "Could not parse string as number: " << e.what();
+          return nullptr;
+      }
+
       ClippingProperty::Pointer cp = ClippingProperty::New(origin, normal);
       cp->SetClippingEnabled(enabled);
      return cp.GetPointer();

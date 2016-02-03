@@ -218,7 +218,6 @@ set(CPP_FILES
   IO/mitkFileWriter.cpp
   IO/mitkFileWriterRegistry.cpp
   IO/mitkFileWriterSelector.cpp
-  IO/mitkFloatToString.cpp
   IO/mitkGeometry3DToXML.cpp
   IO/mitkIFileIO.cpp
   IO/mitkIFileReader.cpp

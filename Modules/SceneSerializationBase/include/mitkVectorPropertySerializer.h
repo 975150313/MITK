@@ -20,7 +20,8 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkBasePropertySerializer.h"
 
 #include "mitkVectorProperty.h"
-#include "mitkFloatToString.h"
+
+#include <boost/lexical_cast.hpp>
 
 namespace mitk {
 
@@ -80,17 +81,6 @@ public:
   itkFactorylessNewMacro(Self);
   itkCloneMacro(Self)
 
-  //! Default implementation, used for everything but double.
-  //! For double, see template specializations at the bottom of
-  //! mitkVectorPropertySerializer.h
-  std::string ToString(DATATYPE value)
-  {
-    std::stringstream valueS;
-    valueS.precision(16);
-    valueS << value;
-    return valueS.str();
-  }
-
   //! Build an XML version of this property
   virtual TiXmlElement* Serialize() override
   {
@@ -107,7 +97,7 @@ public:
 
         auto entryElement = new TiXmlElement("Value");
         entryElement->SetAttribute("idx", indexS.str());
-        entryElement->SetAttribute("value", ToString(listEntry));
+        entryElement->SetAttribute("value", boost::lexical_cast<std::string>(listEntry));
         listElement->LinkEndChild( entryElement );
       }
 
@@ -117,21 +107,6 @@ public:
     {
       return nullptr;
     }
-  }
-
-  //! Default implementation, used for everything but float/double.
-  //! For float/double, see template specializations at the bottom of
-  //! mitkVectorPropertySerializer.h
-  DATATYPE FromString(const std::string& s)
-  {
-    DATATYPE value;
-    std::istringstream ss(s);
-    if ( !(ss >> value ) )
-    {
-      MITK_ERROR << "Could not make sense of '" << s << "'";
-      return -1; // NaN not possible for int, e.g.
-    }
-    return value;
   }
 
   //! Construct a property from an XML serialization
@@ -156,7 +131,15 @@ public:
           return nullptr;
         }
 
-        value = FromString(valueString);
+        try
+        {
+          value = boost::lexical_cast<DATATYPE>(valueString);
+        }
+        catch (boost::bad_lexical_cast& e)
+        {
+          MITK_ERROR << "Could not parse '" << valueString << "' as number: " << e.what();
+          return nullptr;
+        }
 
         datalist.push_back(value);
         ++index;
@@ -175,22 +158,6 @@ public:
   }
 
 };
-
-//! Specialization for double values.
-//! Let conversion be done by a function that correctly handles NaN/Inf
-template <>
-std::string VectorPropertySerializer<double>::ToString(double d)
-{
-  return DoubleToString(d, 16);
-}
-
-//! Specialization for double values.
-//! Let conversion be done by a function that correctly handles NaN/Inf
-template <>
-double VectorPropertySerializer<double>::FromString(const std::string& s)
-{
-  return StringToDouble(s);
-}
 
 typedef VectorPropertySerializer<double> DoubleVectorPropertySerializer;
 typedef VectorPropertySerializer<int> IntVectorPropertySerializer;

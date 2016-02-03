@@ -16,7 +16,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkGeometry3DToXML.h"
 
-#include "mitkFloatToString.h"
+#include <boost/lexical_cast.hpp>
 
 #include <tinyxml.h>
 
@@ -43,36 +43,36 @@ TiXmlElement* mitk::Geometry3DToXML::ToXML(const Geometry3D* geom3D)
   // coefficients are matrix[row][column]!
   TiXmlElement* matrixElem = new TiXmlElement("IndexToWorld");
   matrixElem->SetAttribute("type", "Matrix3x3");
-  matrixElem->SetAttribute("m_0_0", DoubleToString(matrix[0][0]));
-  matrixElem->SetAttribute("m_0_1", DoubleToString(matrix[0][1]));
-  matrixElem->SetAttribute("m_0_2", DoubleToString(matrix[0][2]));
-  matrixElem->SetAttribute("m_1_0", DoubleToString(matrix[1][0]));
-  matrixElem->SetAttribute("m_1_1", DoubleToString(matrix[1][1]));
-  matrixElem->SetAttribute("m_1_2", DoubleToString(matrix[1][2]));
-  matrixElem->SetAttribute("m_2_0", DoubleToString(matrix[2][0]));
-  matrixElem->SetAttribute("m_2_1", DoubleToString(matrix[2][1]));
-  matrixElem->SetAttribute("m_2_2", DoubleToString(matrix[2][2]));
+  matrixElem->SetAttribute("m_0_0", boost::lexical_cast<std::string>(matrix[0][0]));
+  matrixElem->SetAttribute("m_0_1", boost::lexical_cast<std::string>(matrix[0][1]));
+  matrixElem->SetAttribute("m_0_2", boost::lexical_cast<std::string>(matrix[0][2]));
+  matrixElem->SetAttribute("m_1_0", boost::lexical_cast<std::string>(matrix[1][0]));
+  matrixElem->SetAttribute("m_1_1", boost::lexical_cast<std::string>(matrix[1][1]));
+  matrixElem->SetAttribute("m_1_2", boost::lexical_cast<std::string>(matrix[1][2]));
+  matrixElem->SetAttribute("m_2_0", boost::lexical_cast<std::string>(matrix[2][0]));
+  matrixElem->SetAttribute("m_2_1", boost::lexical_cast<std::string>(matrix[2][1]));
+  matrixElem->SetAttribute("m_2_2", boost::lexical_cast<std::string>(matrix[2][2]));
   geomElem->LinkEndChild(matrixElem);
 
   TiXmlElement* offsetElem = new TiXmlElement("Offset");
   offsetElem->SetAttribute("type", "Vector3D");
-  offsetElem->SetAttribute("x", DoubleToString(offset[0]));
-  offsetElem->SetAttribute("y", DoubleToString(offset[1]));
-  offsetElem->SetAttribute("z", DoubleToString(offset[2]));
+  offsetElem->SetAttribute("x", boost::lexical_cast<std::string>(offset[0]));
+  offsetElem->SetAttribute("y", boost::lexical_cast<std::string>(offset[1]));
+  offsetElem->SetAttribute("z", boost::lexical_cast<std::string>(offset[2]));
   geomElem->LinkEndChild(offsetElem);
 
   TiXmlElement* boundsElem = new TiXmlElement("Bounds");
   TiXmlElement* boundsMinElem = new TiXmlElement("Min");
   boundsMinElem->SetAttribute("type", "Vector3D");
-  boundsMinElem->SetAttribute("x", DoubleToString(bounds[0]));
-  boundsMinElem->SetAttribute("y", DoubleToString(bounds[2]));
-  boundsMinElem->SetAttribute("z", DoubleToString(bounds[4]));
+  boundsMinElem->SetAttribute("x", boost::lexical_cast<std::string>(bounds[0]));
+  boundsMinElem->SetAttribute("y", boost::lexical_cast<std::string>(bounds[2]));
+  boundsMinElem->SetAttribute("z", boost::lexical_cast<std::string>(bounds[4]));
   boundsElem->LinkEndChild(boundsMinElem);
   TiXmlElement* boundsMaxElem = new TiXmlElement("Max");
   boundsMaxElem->SetAttribute("type", "Vector3D");
-  boundsMaxElem->SetAttribute("x", DoubleToString(bounds[1]));
-  boundsMaxElem->SetAttribute("y", DoubleToString(bounds[3]));
-  boundsMaxElem->SetAttribute("z", DoubleToString(bounds[5]));
+  boundsMaxElem->SetAttribute("x", boost::lexical_cast<std::string>(bounds[1]));
+  boundsMaxElem->SetAttribute("y", boost::lexical_cast<std::string>(bounds[3]));
+  boundsMaxElem->SetAttribute("z", boost::lexical_cast<std::string>(bounds[5]));
   boundsElem->LinkEndChild(boundsMaxElem);
   geomElem->LinkEndChild(boundsElem);
 
@@ -118,7 +118,15 @@ mitk::Geometry3D::Pointer mitk::Geometry3DToXML::FromXML( TiXmlElement* geometry
         if (TIXML_SUCCESS == matrixElem->QueryStringAttribute(element_namer.str().c_str(),
                                                               &string_value))
         {
-          matrix[r][c] = StringToDouble(string_value);
+          try
+          {
+            matrix[r][c] = boost::lexical_cast<double>(string_value);
+          }
+          catch (boost::bad_lexical_cast& e)
+          {
+            MITK_ERROR << "Could not parse '" << string_value << "' as number: " << e.what();
+            return nullptr;
+          }
         }
         else
         {
@@ -153,7 +161,16 @@ mitk::Geometry3D::Pointer mitk::Geometry3DToXML::FromXML( TiXmlElement* geometry
       return nullptr;
     }
 
-    StringsToDoubles(3, offset_string, offset);
+    for ( unsigned int d = 0; d < 3; ++d )
+      try
+      {
+        offset[d] = boost::lexical_cast<double>(offset_string[d]);
+      }
+      catch ( boost::bad_lexical_cast& e )
+      {
+        MITK_ERROR << "Could not parse '" << offset_string[d] << "' as number: " << e.what();
+        return nullptr;
+      }
   }
   else
   {
@@ -192,8 +209,17 @@ mitk::Geometry3D::Pointer mitk::Geometry3DToXML::FromXML( TiXmlElement* geometry
       return nullptr;
     }
 
-    StringsToDoubles(6, bounds_string, bounds);
-  }
+    for (unsigned int d = 0; d < 6; ++d)
+      try
+      {
+        bounds[d] = boost::lexical_cast<double>(bounds_string[d]);
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+        MITK_ERROR << "Could not parse '" << bounds_string[d] << "' as number: " << e.what();
+        return nullptr;
+      }
+}
 
   // build GeometryData from matrix/offset
   AffineTransform3D::Pointer newTransform = AffineTransform3D::New();

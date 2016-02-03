@@ -20,7 +20,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkBasePropertySerializer.h"
 
 #include "mitkAnnotationProperty.h"
-#include "mitkFloatToString.h"
+#include "mitkStringsToNumbers.h"
 
 namespace mitk
 {
@@ -40,9 +40,9 @@ class AnnotationPropertySerializer : public BasePropertySerializer
         auto  element = new TiXmlElement("annotation");
         element->SetAttribute("label", prop->GetLabel());
         Point3D point = prop->GetPosition();
-        element->SetAttribute("x", DoubleToString(point[0]));
-        element->SetAttribute("y", DoubleToString(point[1]));
-        element->SetAttribute("z", DoubleToString(point[2]));
+        element->SetAttribute("x", boost::lexical_cast<std::string>(point[0]));
+        element->SetAttribute("y", boost::lexical_cast<std::string>(point[1]));
+        element->SetAttribute("z", boost::lexical_cast<std::string>(point[2]));
         return element;
       }
       else return nullptr;
@@ -60,7 +60,16 @@ class AnnotationPropertySerializer : public BasePropertySerializer
       if ( element->QueryStringAttribute( "z", &p_string[2] ) != TIXML_SUCCESS )
         return nullptr;
       Point3D p;
-      StringsToDoubles(3, p_string, p);
+      try
+      {
+        StringsToNumbers<double>(3, p_string, p);
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+        MITK_ERROR << "Could not parse string as number: " << e.what();
+        return nullptr;
+      }
+
       return AnnotationProperty::New(label, p).GetPointer();
     }
 

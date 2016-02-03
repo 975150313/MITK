@@ -15,7 +15,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 ===================================================================*/
 
 #include "mitkTransferFunctionPropertySerializer.h"
-#include "mitkFloatToString.h"
+#include <boost/lexical_cast.hpp>
 
 namespace mitk {
 
@@ -46,8 +46,8 @@ TiXmlElement* mitk::TransferFunctionPropertySerializer::Serialize()
       ++iter )
     {
       auto  pointel = new TiXmlElement("point");
-      pointel->SetAttribute("x", DoubleToString(iter->first));
-      pointel->SetAttribute("y", DoubleToString(iter->second));
+      pointel->SetAttribute("x", boost::lexical_cast<std::string>(iter->first));
+      pointel->SetAttribute("y", boost::lexical_cast<std::string>(iter->second));
       scalarOpacityPointlist->LinkEndChild( pointel );
     }
     element->LinkEndChild( scalarOpacityPointlist );
@@ -59,8 +59,8 @@ TiXmlElement* mitk::TransferFunctionPropertySerializer::Serialize()
       ++iter )
     {
       auto  pointel = new TiXmlElement("point");
-      pointel->SetAttribute("x", DoubleToString(iter->first));
-      pointel->SetAttribute("y", DoubleToString(iter->second));
+      pointel->SetAttribute("x", boost::lexical_cast<std::string>(iter->first));
+      pointel->SetAttribute("y", boost::lexical_cast<std::string>(iter->second));
       gradientOpacityPointlist->LinkEndChild( pointel );
     }
     element->LinkEndChild( gradientOpacityPointlist );
@@ -75,12 +75,12 @@ TiXmlElement* mitk::TransferFunctionPropertySerializer::Serialize()
       double myVal[6];
       ctf->GetNodeValue(i, myVal);
       auto  pointel = new TiXmlElement("point");
-      pointel->SetAttribute("x", DoubleToString(myVal[0]));
-      pointel->SetAttribute("r", DoubleToString(myVal[1]));
-      pointel->SetAttribute("g", DoubleToString(myVal[2]));
-      pointel->SetAttribute("b", DoubleToString(myVal[3]));
-      pointel->SetAttribute("midpoint", DoubleToString(myVal[4]));
-      pointel->SetAttribute("sharpness", DoubleToString(myVal[5]));
+      pointel->SetAttribute("x", boost::lexical_cast<std::string>(myVal[0]));
+      pointel->SetAttribute("r", boost::lexical_cast<std::string>(myVal[1]));
+      pointel->SetAttribute("g", boost::lexical_cast<std::string>(myVal[2]));
+      pointel->SetAttribute("b", boost::lexical_cast<std::string>(myVal[3]));
+      pointel->SetAttribute("midpoint", boost::lexical_cast<std::string>(myVal[4]));
+      pointel->SetAttribute("sharpness", boost::lexical_cast<std::string>(myVal[5]));
       pointlist->LinkEndChild( pointel );
     }
     element->LinkEndChild( pointlist );
@@ -133,54 +133,69 @@ BaseProperty::Pointer mitk::TransferFunctionPropertySerializer::Deserialize(TiXm
 
   tf->ClearScalarOpacityPoints();
 
-  for( TiXmlElement* pointElement = scalarOpacityPointlist->FirstChildElement("point"); pointElement != nullptr; pointElement = pointElement->NextSiblingElement("point"))
+  try
   {
-    std::string x;
-    std::string y;
-    if (pointElement->QueryStringAttribute("x", &x) != TIXML_SUCCESS) return nullptr;
-    if (pointElement->QueryStringAttribute("y", &y) != TIXML_SUCCESS) return nullptr;
-    tf->AddScalarOpacityPoint(StringToDouble(x), StringToDouble(y));
+    for( TiXmlElement* pointElement = scalarOpacityPointlist->FirstChildElement("point");
+         pointElement != nullptr;
+         pointElement = pointElement->NextSiblingElement("point"))
+    {
+      std::string x;
+      std::string y;
+      if (pointElement->QueryStringAttribute("x", &x) != TIXML_SUCCESS) return nullptr;
+      if (pointElement->QueryStringAttribute("y", &y) != TIXML_SUCCESS) return nullptr;
+      tf->AddScalarOpacityPoint(boost::lexical_cast<double>(x), boost::lexical_cast<double>(y));
+    }
+
+    TiXmlElement* gradientOpacityPointlist = element->FirstChildElement("GradientOpacity");
+    if (gradientOpacityPointlist == nullptr)
+      return nullptr;
+
+    tf->ClearGradientOpacityPoints();
+
+    for( TiXmlElement* pointElement = gradientOpacityPointlist->FirstChildElement("point");
+         pointElement != nullptr;
+         pointElement = pointElement->NextSiblingElement("point"))
+    {
+      std::string x;
+      std::string y;
+      if (pointElement->QueryStringAttribute("x", &x) != TIXML_SUCCESS) return nullptr;
+      if (pointElement->QueryStringAttribute("y", &y) != TIXML_SUCCESS) return nullptr;
+      tf->AddGradientOpacityPoint(boost::lexical_cast<double>(x), boost::lexical_cast<double>(y));
+    }
+
+    TiXmlElement* rgbPointlist = element->FirstChildElement("Color");
+    if (rgbPointlist == nullptr)
+      return nullptr;
+    vtkColorTransferFunction* ctf = tf->GetColorTransferFunction();
+    if (ctf == nullptr)
+      return nullptr;
+
+    ctf->RemoveAllPoints();
+
+    for( TiXmlElement* pointElement = rgbPointlist->FirstChildElement("point");
+         pointElement != nullptr;
+         pointElement = pointElement->NextSiblingElement("point"))
+    {
+      std::string x;
+      std::string r,g,b, midpoint, sharpness;
+      if (pointElement->QueryStringAttribute("x", &x) != TIXML_SUCCESS) return nullptr;
+      if (pointElement->QueryStringAttribute("r", &r) != TIXML_SUCCESS) return nullptr;
+      if (pointElement->QueryStringAttribute("g", &g) != TIXML_SUCCESS) return nullptr;
+      if (pointElement->QueryStringAttribute("b", &b) != TIXML_SUCCESS) return nullptr;
+      if (pointElement->QueryStringAttribute("midpoint", &midpoint) != TIXML_SUCCESS) return nullptr;
+      if (pointElement->QueryStringAttribute("sharpness", &sharpness) != TIXML_SUCCESS) return nullptr;
+      ctf->AddRGBPoint(boost::lexical_cast<double>(x),
+                       boost::lexical_cast<double>(r), boost::lexical_cast<double>(g), boost::lexical_cast<double>(b),
+                       boost::lexical_cast<double>(midpoint),
+                       boost::lexical_cast<double>(sharpness));
+    }
+  }
+  catch ( boost::bad_lexical_cast& e )
+  {
+    MITK_ERROR << "Could not parse string as number: " << e.what();
+    return nullptr;
   }
 
-  TiXmlElement* gradientOpacityPointlist = element->FirstChildElement("GradientOpacity");
-  if (gradientOpacityPointlist == nullptr)
-    return nullptr;
-
-  tf->ClearGradientOpacityPoints();
-
-  for( TiXmlElement* pointElement = gradientOpacityPointlist->FirstChildElement("point"); pointElement != nullptr; pointElement = pointElement->NextSiblingElement("point"))
-  {
-    std::string x;
-    std::string y;
-    if (pointElement->QueryStringAttribute("x", &x) != TIXML_SUCCESS) return nullptr;
-    if (pointElement->QueryStringAttribute("y", &y) != TIXML_SUCCESS) return nullptr;
-    tf->AddGradientOpacityPoint(StringToDouble(x), StringToDouble(y));
-  }
-
-  TiXmlElement* rgbPointlist = element->FirstChildElement("Color");
-  if (rgbPointlist == nullptr)
-    return nullptr;
-  vtkColorTransferFunction* ctf = tf->GetColorTransferFunction();
-  if (ctf == nullptr)
-    return nullptr;
-
-  ctf->RemoveAllPoints();
-
-  for( TiXmlElement* pointElement = rgbPointlist->FirstChildElement("point"); pointElement != nullptr; pointElement = pointElement->NextSiblingElement("point"))
-  {
-    std::string x;
-    std::string r,g,b, midpoint, sharpness;
-    if (pointElement->QueryStringAttribute("x", &x) != TIXML_SUCCESS) return nullptr;
-    if (pointElement->QueryStringAttribute("r", &r) != TIXML_SUCCESS) return nullptr;
-    if (pointElement->QueryStringAttribute("g", &g) != TIXML_SUCCESS) return nullptr;
-    if (pointElement->QueryStringAttribute("b", &b) != TIXML_SUCCESS) return nullptr;
-    if (pointElement->QueryStringAttribute("midpoint", &midpoint) != TIXML_SUCCESS) return nullptr;
-    if (pointElement->QueryStringAttribute("sharpness", &sharpness) != TIXML_SUCCESS) return nullptr;
-    ctf->AddRGBPoint(StringToDouble(x),
-                     StringToDouble(r), StringToDouble(g), StringToDouble(b),
-                     StringToDouble(midpoint),
-                     StringToDouble(sharpness));
-  }
   return TransferFunctionProperty::New(tf).GetPointer();
 }
 

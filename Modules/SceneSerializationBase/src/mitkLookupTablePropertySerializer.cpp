@@ -17,7 +17,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkLookupTablePropertySerializer.h"
 #include <mitkLookupTableProperty.h>
 
-#include "mitkFloatToString.h"
+#include "mitkStringsToNumbers.h"
 
 TiXmlElement* mitk::LookupTablePropertySerializer::Serialize()
 {
@@ -41,32 +41,32 @@ TiXmlElement* mitk::LookupTablePropertySerializer::Serialize()
     range = lut->GetHueRange();
     auto  child = new TiXmlElement("HueRange");
     element->LinkEndChild( child );
-    child->SetAttribute("min", DoubleToString(range[0]));
-    child->SetAttribute("max", DoubleToString(range[1]));
+    child->SetAttribute("min", boost::lexical_cast<std::string>(range[0]));
+    child->SetAttribute("max", boost::lexical_cast<std::string>(range[1]));
 
     range = lut->GetValueRange();
     child = new TiXmlElement("ValueRange");
     element->LinkEndChild( child );
-    child->SetAttribute("min", DoubleToString(range[0]));
-    child->SetAttribute("max", DoubleToString(range[1]));
+    child->SetAttribute("min", boost::lexical_cast<std::string>(range[0]));
+    child->SetAttribute("max", boost::lexical_cast<std::string>(range[1]));
 
     range = lut->GetSaturationRange();
     child = new TiXmlElement("SaturationRange");
     element->LinkEndChild( child );
-    child->SetAttribute("min", DoubleToString(range[0]));
-    child->SetAttribute("max", DoubleToString(range[1]));
+    child->SetAttribute("min", boost::lexical_cast<std::string>(range[0]));
+    child->SetAttribute("max", boost::lexical_cast<std::string>(range[1]));
 
     range = lut->GetAlphaRange();
     child = new TiXmlElement("AlphaRange");
     element->LinkEndChild( child );
-    child->SetAttribute("min", DoubleToString(range[0]));
-    child->SetAttribute("max", DoubleToString(range[1]));
+    child->SetAttribute("min", boost::lexical_cast<std::string>(range[0]));
+    child->SetAttribute("max", boost::lexical_cast<std::string>(range[1]));
 
     range = lut->GetTableRange();
     child = new TiXmlElement("TableRange");
     element->LinkEndChild( child );
-    child->SetAttribute("min", DoubleToString(range[0]));
-    child->SetAttribute("max", DoubleToString(range[1]));
+    child->SetAttribute("min", boost::lexical_cast<std::string>(range[0]));
+    child->SetAttribute("max", boost::lexical_cast<std::string>(range[1]));
 
     child = new TiXmlElement("Table");
     element->LinkEndChild( child );
@@ -74,10 +74,10 @@ TiXmlElement* mitk::LookupTablePropertySerializer::Serialize()
     {
       auto  grandChild = new TiXmlElement("RgbaColor");
       rgba = lut->GetTableValue(index);
-      grandChild->SetAttribute("R", DoubleToString(rgba[0]));
-      grandChild->SetAttribute("G", DoubleToString(rgba[1]));
-      grandChild->SetAttribute("B", DoubleToString(rgba[2]));
-      grandChild->SetAttribute("A", DoubleToString(rgba[3]));
+      grandChild->SetAttribute("R", boost::lexical_cast<std::string>(rgba[0]));
+      grandChild->SetAttribute("G", boost::lexical_cast<std::string>(rgba[1]));
+      grandChild->SetAttribute("B", boost::lexical_cast<std::string>(rgba[2]));
+      grandChild->SetAttribute("A", boost::lexical_cast<std::string>(rgba[3]));
       child->LinkEndChild( grandChild );
     }
     return element;
@@ -118,65 +118,73 @@ mitk::BaseProperty::Pointer mitk::LookupTablePropertySerializer::Deserialize(TiX
   else
     return nullptr;
 
-  TiXmlElement* child = element->FirstChildElement("HueRange");
-  if (child)
+  try
   {
-    if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
-    if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
-    StringsToDoubles(2, double_strings, range);
-    lut->SetHueRange( range );
-  }
-
-  child = element->FirstChildElement("ValueRange");
-  if (child)
-  {
-    if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
-    if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
-    StringsToDoubles(2, double_strings, range);
-    lut->SetValueRange( range );
-  }
-
-  child = element->FirstChildElement("SaturationRange");
-  if (child)
-  {
-    if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
-    if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
-    StringsToDoubles(2, double_strings, range);
-    lut->SetSaturationRange( range );
-  }
-
-  child = element->FirstChildElement("AlphaRange");
-  if (child)
-  {
-    if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
-    if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
-    StringsToDoubles(2, double_strings, range);
-    lut->SetAlphaRange( range );
-  }
-
-  child = element->FirstChildElement("TableRange");
-  if (child)
-  {
-    if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
-    if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
-    StringsToDoubles(2, double_strings, range);
-    lut->SetTableRange( range );
-  }
-
-  child = element->FirstChildElement("Table");
-  if (child)
-  {
-    unsigned int index(0);
-    for( TiXmlElement* grandChild = child->FirstChildElement("RgbaColor"); grandChild; grandChild = grandChild->NextSiblingElement("RgbaColor"))
+    TiXmlElement* child = element->FirstChildElement("HueRange");
+    if (child)
     {
-      if ( grandChild->QueryStringAttribute("R", &double_strings[0]) != TIXML_SUCCESS ) return nullptr;
-      if ( grandChild->QueryStringAttribute("G", &double_strings[1]) != TIXML_SUCCESS ) return nullptr;
-      if ( grandChild->QueryStringAttribute("B", &double_strings[2]) != TIXML_SUCCESS ) return nullptr;
-      if ( grandChild->QueryStringAttribute("A", &double_strings[3]) != TIXML_SUCCESS ) return nullptr;
-      StringsToDoubles(4, double_strings, rgba);
-      lut->SetTableValue( index, rgba );
-      ++index;
+      if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
+      if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
+      StringsToNumbers<double>(2, double_strings, range);
+      lut->SetHueRange( range );
     }
+
+    child = element->FirstChildElement("ValueRange");
+    if (child)
+    {
+      if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
+      if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
+      StringsToNumbers<double>(2, double_strings, range);
+      lut->SetValueRange( range );
+    }
+
+    child = element->FirstChildElement("SaturationRange");
+    if (child)
+    {
+      if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
+      if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
+      StringsToNumbers<double>(2, double_strings, range);
+      lut->SetSaturationRange( range );
+    }
+
+    child = element->FirstChildElement("AlphaRange");
+    if (child)
+    {
+      if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
+      if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
+      StringsToNumbers<double>(2, double_strings, range);
+      lut->SetAlphaRange( range );
+    }
+
+    child = element->FirstChildElement("TableRange");
+    if (child)
+    {
+      if ( child->QueryStringAttribute( "min", &double_strings[0] ) != TIXML_SUCCESS ) return nullptr;
+      if ( child->QueryStringAttribute( "max", &double_strings[1] ) != TIXML_SUCCESS ) return nullptr;
+      StringsToNumbers<double>(2, double_strings, range);
+      lut->SetTableRange( range );
+    }
+
+    child = element->FirstChildElement("Table");
+    if (child)
+    {
+      unsigned int index(0);
+      for( TiXmlElement* grandChild = child->FirstChildElement("RgbaColor"); grandChild; grandChild = grandChild->NextSiblingElement("RgbaColor"))
+      {
+        if ( grandChild->QueryStringAttribute("R", &double_strings[0]) != TIXML_SUCCESS ) return nullptr;
+        if ( grandChild->QueryStringAttribute("G", &double_strings[1]) != TIXML_SUCCESS ) return nullptr;
+        if ( grandChild->QueryStringAttribute("B", &double_strings[2]) != TIXML_SUCCESS ) return nullptr;
+        if ( grandChild->QueryStringAttribute("A", &double_strings[3]) != TIXML_SUCCESS ) return nullptr;
+        StringsToNumbers<double>(4, double_strings, rgba);
+        lut->SetTableValue( index, rgba );
+        ++index;
+      }
+    }
+  }
+  catch (boost::bad_lexical_cast& e)
+  {
+    MITK_ERROR << "Could not parse string as number: " << e.what();
+    return nullptr;
   }
 
   LookupTable::Pointer mitkLut = LookupTable::New();
