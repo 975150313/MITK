@@ -819,9 +819,11 @@ foreach(ep ${MITK_EXTERNAL_PROJECTS})
       # Otherwise, existing Find<proj>.cmake files could fail.
       # (e.g. in the case of GLEW and the FindGLEW.cmake file shipped
       # with CMake).
+      set (_orig_package_config_dir ${${ep}_DIR})
       find_package(${_package} QUIET CONFIG)
       string(TOUPPER "${_package}" _package_uc)
       if(NOT (${_package}_FOUND OR ${_package_uc}_FOUND))
+        set (${ep}_DIR ${_orig_package_config_dir}) # Restore EP_DIR to initial value - if CONFIG mode did not find package, it will overwrite EP_DIR with EP-NOTFOUND
         find_package(${_package} REQUIRED)
       endif()
     endif()
