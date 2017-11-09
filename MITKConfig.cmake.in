@@ -173,7 +173,7 @@ set(CMAKE_MODULE_PATH ${MITK_CMAKE_MODULE_PATH} ${CMAKE_MODULE_PATH})
 # -----------------------------------------
 # Special handling for DCMTK
 
-if(MITK_USE_DCMTK)
+if(MITK_USE_DCMTK AND NOT DCMTK_FOUND)
   # Due to the preferred CONFIG mode in find_package calls above,
   # the DCMTKConfig.cmake file is read, which does not provide useful
   # package information. We explictly need MODULE mode to find DCMTK.

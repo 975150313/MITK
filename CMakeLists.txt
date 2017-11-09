@@ -1327,7 +1327,7 @@ foreach(ep ${MITK_EXTERNAL_PROJECTS})
 
   if(_package)
     set(MITK_CONFIG_EXTERNAL_PROJECTS "${MITK_CONFIG_EXTERNAL_PROJECTS}
-if(MITK_USE_${ep})
+if(MITK_USE_${ep} AND NOT ${ep}_FOUND)
   set(${ep}_DIR \${MITK_${ep}_DIR})
   if(MITK_${ep}_COMPONENTS)
     mitkMacroFindDependency(${_package} COMPONENTS \${MITK_${ep}_COMPONENTS})
