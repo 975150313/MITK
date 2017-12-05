@@ -19,6 +19,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 // mitk includes
 #include "mitkVtkPropRenderer.h"
 #include <mitkAbstractTransformGeometry.h>
+#include <mitkCoreServices.h>
 #include <mitkDataNode.h>
 #include <mitkLine.h>
 #include <mitkPlaneGeometry.h>

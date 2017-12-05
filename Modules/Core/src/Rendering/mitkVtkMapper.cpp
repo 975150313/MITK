@@ -16,6 +16,21 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkVtkMapper.h"
 
+#include <mitkCoreServices.h>
+
+mitk::VtkMapper::VtkMapperLocalStorage::VtkMapperLocalStorage()
+{
+  IShaderRepository *shaderRepo = CoreServices::GetShaderRepository();
+  if (shaderRepo)
+  {
+    m_ShaderProgram = shaderRepo->CreateShaderProgram();
+  }
+}
+
+mitk::VtkMapper::VtkMapperLocalStorage::~VtkMapperLocalStorage()
+{
+}
+
 mitk::VtkMapper::VtkMapper()
 {
 }

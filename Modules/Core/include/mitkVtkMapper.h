@@ -25,7 +25,6 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkMapper.h"
 #include "mitkVtkPropRenderer.h"
 #include <MitkCoreExports.h>
-#include <mitkCoreServices.h>
 
 #include <vtkActor.h>
 #include <vtkLinearTransform.h>
@@ -145,16 +144,8 @@ namespace mitk
       mitk::IShaderRepository::ShaderProgram::Pointer m_ShaderProgram;
       itk::TimeStamp m_ModifiedTimeStamp;
 
-      VtkMapperLocalStorage()
-      {
-        IShaderRepository *shaderRepo = CoreServices::GetShaderRepository();
-        if (shaderRepo)
-        {
-          m_ShaderProgram = shaderRepo->CreateShaderProgram();
-        }
-      }
-
-      ~VtkMapperLocalStorage() {}
+      VtkMapperLocalStorage();
+      ~VtkMapperLocalStorage();
     };
 
     mitk::LocalStorageHandler<VtkMapperLocalStorage> m_VtkMapperLSH;
