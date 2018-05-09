@@ -140,6 +140,7 @@ void QmitkScreenshotMaker::GenerateMultiplanarScreenshots()
     }
 
     //emit StartBlockControls();
+    auto cornerAnnotationsVisible = m_MultiWidget->IsCornerAnnotationVisible();
     m_MultiWidget->SetCornerAnnotationVisibility(false);
 
     mitk::DataNode* n;
@@ -201,7 +202,7 @@ void QmitkScreenshotMaker::GenerateMultiplanarScreenshots()
         n->SetProperty( "color", mitk::ColorProperty::New( 0,0,1 ) );
     }
 
-    m_MultiWidget->SetCornerAnnotationVisibility(true);
+    m_MultiWidget->SetCornerAnnotationVisibility(cornerAnnotationsVisible);
 }
 
 void QmitkScreenshotMaker::Generate3DHighresScreenshot()
@@ -278,12 +279,13 @@ void QmitkScreenshotMaker::GenerateMultiplanar3DHighresScreenshot()
 void QmitkScreenshotMaker::GenerateHR3DAtlasScreenshots(QString fileName, QString filter)
 {
     // only works correctly for 3D RenderWindow
+    auto cornerAnnotationsVisible = m_MultiWidget->IsCornerAnnotationVisible();
     m_MultiWidget->SetCornerAnnotationVisibility(false);
     vtkRenderer* renderer = m_MultiWidget->mitkWidget4->GetRenderer()->GetVtkRenderer();
     if (renderer == nullptr)
         return;
     this->TakeScreenshot(renderer, this->m_Controls->m_MagFactor->text().toFloat(), fileName, filter);
-    m_MultiWidget->SetCornerAnnotationVisibility(true);
+    m_MultiWidget->SetCornerAnnotationVisibility(cornerAnnotationsVisible);
 }
 
 vtkCamera* QmitkScreenshotMaker::GetCam()
@@ -419,6 +421,10 @@ void QmitkScreenshotMaker::TakeScreenshot(vtkRenderer* renderer, unsigned int ma
     double bgcolor[] = {m_BackgroundColor.red()/255.0, m_BackgroundColor.green()/255.0, m_BackgroundColor.blue()/255.0};
     renderer->SetBackground(bgcolor);
 
+    auto cornerAnnotationsVisible = m_MultiWidget->IsCornerAnnotationVisible();
+    auto departmentLogoVisible = m_MultiWidget->IsDepartmentLogoEnabled();
+    auto coloredRectVisible = m_MultiWidget->IsColoredRectanglesEnabled();
+    auto gradientVisible = m_MultiWidget->GetGradientBackgroundFlag();
     m_MultiWidget->DisableColoredRectangles();
     m_MultiWidget->DisableDepartmentLogo();
     m_MultiWidget->DisableGradientBackground();
@@ -437,10 +443,22 @@ void QmitkScreenshotMaker::TakeScreenshot(vtkRenderer* renderer, unsigned int ma
     m_MultiWidget->mitkWidget3->ActivateMenuWidget( true, m_MultiWidget );
     m_MultiWidget->mitkWidget4->ActivateMenuWidget( true, m_MultiWidget );
 
-    m_MultiWidget->EnableColoredRectangles();
-    m_MultiWidget->EnableDepartmentLogo();
-    m_MultiWidget->EnableGradientBackground();
-    m_MultiWidget->SetCornerAnnotationVisibility(true);
+    if ( coloredRectVisible )
+    {
+      m_MultiWidget->EnableColoredRectangles();
+    }
+    if ( departmentLogoVisible )
+    {
+      m_MultiWidget->EnableDepartmentLogo();
+    }
+    if ( gradientVisible )
+    {
+      m_MultiWidget->EnableGradientBackground();
+    }
+    if ( cornerAnnotationsVisible )
+    {
+      m_MultiWidget->SetCornerAnnotationVisibility(cornerAnnotationsVisible);
+    }
     renderer->SetBackground(oldBackground);
 
     renderer->GetRenderWindow()->SetDoubleBuffer(doubleBuffering);
