@@ -828,6 +828,10 @@ void QmitkDataManagerView::ColorActionChanged()
       m_ColorButton->setAutoFillBackground(true);
       m_ColorButton->setStyleSheet(styleSheet);
     }
+
+    bool editable = true;
+    node->GetBoolProperty("editable", editable);
+    m_GizmoToggleAction->setEnabled(editable);
   }
 }
 
@@ -1214,7 +1218,10 @@ void QmitkDataManagerView::ToggleGizmoOnSelectedNode(bool currentlyOn)
   auto selection = this->GetCurrentSelection();
   if (selection.size() == 1)
   {
-    if (!currentlyOn)
+    bool editable = true;
+    selection.first()->GetBoolProperty("editable", editable);
+
+    if (!currentlyOn && editable)
     {
       mitk::Gizmo::AddGizmoToNode(selection.first(), GetDataStorage());
     }
