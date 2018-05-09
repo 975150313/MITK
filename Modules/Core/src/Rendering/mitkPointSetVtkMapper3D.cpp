@@ -446,34 +446,31 @@ void mitk::PointSetVtkMapper3D::GenerateDataForRenderer(mitk::BaseRenderer *rend
   BaseLocalStorage *ls = m_LSH.GetLocalStorage(renderer);
   bool needGenerateData = ls->IsGenerateDataRequired(renderer, this, GetDataNode());
 
-  if (!needGenerateData)
+  mitk::FloatProperty *pointSizeProp =
+    dynamic_cast<mitk::FloatProperty *>(this->GetDataNode()->GetProperty("pointsize"));
+  mitk::FloatProperty *contourSizeProp =
+    dynamic_cast<mitk::FloatProperty *>(this->GetDataNode()->GetProperty("contoursize"));
+
+  bool useVertexRendering = false;
+  this->GetDataNode()->GetBoolProperty("Vertex Rendering", useVertexRendering);
+
+  // only create new vtk render objects if property values were changed
+  if (pointSizeProp && m_PointSize != pointSizeProp->GetValue())
+    needGenerateData = true;
+  if (contourSizeProp && m_ContourRadius != contourSizeProp->GetValue())
+    needGenerateData = true;
+
+  // when vertex rendering is enabled the pointset is always
+  // drawn with opengl, thus we leave needGenerateData always false
+  if (useVertexRendering && m_VertexRendering != useVertexRendering)
   {
-    mitk::FloatProperty *pointSizeProp =
-      dynamic_cast<mitk::FloatProperty *>(this->GetDataNode()->GetProperty("pointsize"));
-    mitk::FloatProperty *contourSizeProp =
-      dynamic_cast<mitk::FloatProperty *>(this->GetDataNode()->GetProperty("contoursize"));
-
-    bool useVertexRendering = false;
-    this->GetDataNode()->GetBoolProperty("Vertex Rendering", useVertexRendering);
-
-    // only create new vtk render objects if property values were changed
-    if (pointSizeProp && m_PointSize != pointSizeProp->GetValue())
-      needGenerateData = true;
-    if (contourSizeProp && m_ContourRadius != contourSizeProp->GetValue())
-      needGenerateData = true;
-
-    // when vertex rendering is enabled the pointset is always
-    // drawn with opengl, thus we leave needGenerateData always false
-    if (useVertexRendering && m_VertexRendering != useVertexRendering)
-    {
-      needGenerateData = false;
-      m_VertexRendering = true;
-    }
-    else if (!useVertexRendering && m_VertexRendering)
-    {
-      m_VertexRendering = false;
-      needGenerateData = true;
-    }
+    needGenerateData = false;
+    m_VertexRendering = true;
+  }
+  else if (!useVertexRendering && m_VertexRendering)
+  {
+    m_VertexRendering = false;
+    needGenerateData = true;
   }
 
   if (needGenerateData)
