@@ -232,30 +232,30 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
   auto planarSubdivisionPolygonNodeDescriptor =
     QmitkNodeDescriptorManager::GetInstance()->GetDescriptor("PlanarSubdivisionPolygon");
 
-  QAction* globalReinitAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/Refresh_48.png"), tr("Global Reinit"), this);
+  QAction* globalReinitAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/global_reinit_24x24.png"), tr("Align display to all objects"), this);
   QObject::connect( globalReinitAction, SIGNAL( triggered(bool) )
     , this, SLOT( GlobalReinit(bool) ) );
   unknownDataNodeDescriptor->AddAction(globalReinitAction);
   m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor, globalReinitAction));
 
-  QAction* saveAction = new QmitkFileSaveAction(QIcon(":/org.mitk.gui.qt.datamanager/Save_48.png"),
-                                                this->GetSite()->GetWorkbenchWindow());
-  unknownDataNodeDescriptor->AddAction(saveAction);
-  m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor,saveAction));
-
-  QAction* removeAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/Remove_48.png"), tr("Remove"), this);
-  QObject::connect( removeAction, SIGNAL( triggered(bool) )
-    , this, SLOT( RemoveSelectedNodes(bool) ) );
-  unknownDataNodeDescriptor->AddAction(removeAction);
-  m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor,removeAction));
-
-  QAction* reinitAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/Refresh_48.png"), tr("Reinit"), this);
+  QAction* reinitAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/reinit_24x24.png"), tr("Align display to selected"), this);
   QObject::connect( reinitAction, SIGNAL( triggered(bool) )
     , this, SLOT( ReinitSelectedNodes(bool) ) );
   unknownDataNodeDescriptor->AddAction(reinitAction);
   m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor,reinitAction));
 
-  m_GizmoToggleAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/ToggleGizmoNode_48.png"),
+  QAction* saveAction = new QmitkFileSaveAction(QIcon(":/org.mitk.gui.qt.datamanager/save_24x24.png"),
+                                                this->GetSite()->GetWorkbenchWindow());
+  unknownDataNodeDescriptor->AddAction(saveAction);
+  m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor,saveAction));
+
+  QAction* removeAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/remove_24x24.png"), tr("Remove"), this);
+  QObject::connect( removeAction, SIGNAL( triggered(bool) )
+    , this, SLOT( RemoveSelectedNodes(bool) ) );
+  unknownDataNodeDescriptor->AddAction(removeAction);
+  m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor,removeAction));
+
+  m_GizmoToggleAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/gizmo_24x24.png"),
                                     "Direct manipulation", this);
   m_GizmoToggleAction->setCheckable(true);
   unknownDataNodeDescriptor->AddAction(m_GizmoToggleAction, false);
@@ -558,7 +558,7 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
   //m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(surfaceDataNodeDescriptor, m_SurfaceRepresentation));
 
   QAction* showOnlySelectedNodes
-    = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/ShowSelectedNode_48.png")
+    = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/view_24x24.png")
     , tr("Show only selected nodes"), this);
   QObject::connect( showOnlySelectedNodes, SIGNAL( triggered(bool) )
     , this, SLOT( ShowOnlySelectedNodes(bool) ) );
@@ -566,7 +566,7 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
   m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor, showOnlySelectedNodes));
 
   QAction* toggleSelectedVisibility
-    = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/InvertShowSelectedNode_48.png")
+    = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/toggle_view_24x24.png")
     , tr("Toggle visibility"), this);
   QObject::connect( toggleSelectedVisibility, SIGNAL( triggered(bool) )
     , this, SLOT( ToggleVisibilityOfSelectedNodes(bool) ) );
@@ -574,7 +574,7 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
   m_DescriptorActionList.push_back(std::pair<QmitkNodeDescriptor*, QAction*>(unknownDataNodeDescriptor,toggleSelectedVisibility));
 
   QAction* actionShowInfoDialog
-    = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/ShowDataInfo_48.png")
+    = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/details_24x24.png")
     , tr("Details..."), this);
   QObject::connect( actionShowInfoDialog, SIGNAL( triggered(bool) )
     , this, SLOT( ShowInfoDialogForSelectedNodes(bool) ) );

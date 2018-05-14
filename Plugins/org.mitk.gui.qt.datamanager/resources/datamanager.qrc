@@ -1,11 +1,12 @@
 <RCC>
     <qresource prefix="/org.mitk.gui.qt.datamanager">
-        <file>Refresh_48.png</file>
-        <file>Remove_48.png</file>
-        <file>Save_48.png</file>
-        <file>InvertShowSelectedNode_48.png</file>
-        <file>ShowDataInfo_48.png</file>
-        <file>ShowSelectedNode_48.png</file>
-        <file>ToggleGizmoNode_48.png</file>
+        <file>details_24x24.png</file>
+        <file>gizmo_24x24.png</file>
+        <file>global_reinit_24x24.png</file>
+        <file>reinit_24x24.png</file>
+        <file>remove_24x24.png</file>
+        <file>save_24x24.png</file>
+        <file>toggle_view_24x24.png</file>
+        <file>view_24x24.png</file>
     </qresource>
 </RCC>

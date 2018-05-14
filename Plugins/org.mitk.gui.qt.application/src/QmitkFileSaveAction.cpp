@@ -63,8 +63,8 @@ public:
     m_Window = berry::IWorkbenchWindow::Pointer(window);
     m_Action = action;
 
-    action->setText("&Save...");
-    action->setToolTip("Save data objects (images, surfaces,...)");
+    action->setText("&Export...");
+    action->setToolTip("Save data objects to file");
 
     berry::ISelectionService* selectionService = m_Window.Lock()->GetSelectionService();
     setEnabled(selectionService->GetSelection());
