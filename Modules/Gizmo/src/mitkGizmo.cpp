@@ -479,9 +479,15 @@ void mitk::Gizmo::OnFollowedGeometryModified()
 {
   m_Center = m_FollowedGeometry->GetCenter();
 
-  m_AxisX = m_FollowedGeometry->GetAxisVector(0);
-  m_AxisY = m_FollowedGeometry->GetAxisVector(1);
-  m_AxisZ = m_FollowedGeometry->GetAxisVector(2);
+  auto vnlAxisX = m_FollowedGeometry->GetMatrixColumn(0);
+  auto vnlAxisY = m_FollowedGeometry->GetMatrixColumn(1);
+  auto vnlAxisZ = m_FollowedGeometry->GetMatrixColumn(2);
+  for ( int d = 0; d < 2; ++d )
+  {
+    m_AxisX[d] = vnlAxisX[d];
+    m_AxisY[d] = vnlAxisY[d];
+    m_AxisZ[d] = vnlAxisZ[d];
+  }
 
   m_AxisX.Normalize();
   m_AxisY.Normalize();
