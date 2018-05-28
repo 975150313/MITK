@@ -559,7 +559,7 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
 
   QAction* showOnlySelectedNodes
     = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/view_24x24.png")
-    , tr("Show only selected nodes"), this);
+    , tr("Show only selected object(s)"), this);
   QObject::connect( showOnlySelectedNodes, SIGNAL( triggered(bool) )
     , this, SLOT( ShowOnlySelectedNodes(bool) ) );
   unknownDataNodeDescriptor->AddAction(showOnlySelectedNodes);
