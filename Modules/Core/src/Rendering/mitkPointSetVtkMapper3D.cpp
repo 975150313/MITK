@@ -698,6 +698,14 @@ void mitk::PointSetVtkMapper3D::SetDefaultProperties(mitk::DataNode *node, mitk:
   node->AddProperty("contoursize", mitk::FloatProperty::New(0.5), renderer, overwrite);
   node->AddProperty("show points", mitk::BoolProperty::New(true), renderer, overwrite);
   node->AddProperty("updateDataOnRender", mitk::BoolProperty::New(true), renderer, overwrite);
-  node->AddProperty("Vertex Rendering", mitk::BoolProperty::New(false), renderer, overwrite);
+  auto pointSet = dynamic_cast<mitk::PointSet*>(node->GetData());
+  if ( pointSet != nullptr && pointSet->GetSize() > 100 )
+  {
+    node->AddProperty("Vertex Rendering", mitk::BoolProperty::New(true), renderer, overwrite);
+  }
+  else
+  {
+      node->AddProperty("Vertex Rendering", mitk::BoolProperty::New(false), renderer, overwrite);
+  }
   Superclass::SetDefaultProperties(node, renderer, overwrite);
 }
