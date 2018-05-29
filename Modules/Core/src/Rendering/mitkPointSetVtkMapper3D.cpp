@@ -473,7 +473,7 @@ void mitk::PointSetVtkMapper3D::GenerateDataForRenderer(mitk::BaseRenderer *rend
     needGenerateData = true;
   }
 
-  if (needGenerateData)
+  if (needGenerateData && !useVertexRendering)
   {
     this->CreateVTKRenderObjects();
     ls->UpdateGenerateDataTime();
