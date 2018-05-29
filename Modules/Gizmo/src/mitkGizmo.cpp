@@ -181,6 +181,7 @@ mitk::DataNode::Pointer mitk::Gizmo::AddGizmoToNode(DataNode *node, DataStorage 
   auto gizmoNode = DataNode::New();
   gizmoNode->SetName("Gizmo");
   gizmoNode->SetData(gizmo);
+  gizmoNode->ReplaceProperty("visible", node->GetProperty("visible")); // share the real instance of the visible property to become (in)visible along with the manipulated object
   gizmo->FollowGeometry(node->GetData()->GetGeometry());
 
   //--------------------------------------------------------------
