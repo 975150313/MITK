@@ -108,15 +108,17 @@ void HelpEditor::CreateQtPartControl(QWidget* parent)
   m_ToolBar->addSeparator();
 
   m_ZoomIn = m_ToolBar->addAction(QIcon(":/org.blueberry.ui.qt.help/zoom-in.png"), "Zoom in", m_WebEngineView, SLOT(scaleUp()));
+  m_ZoomIn->setVisible(false);
   m_ZoomOut = m_ToolBar->addAction(QIcon(":/org.blueberry.ui.qt.help/zoom-out.png"), "Zoom out", m_WebEngineView, SLOT(scaleDown()));
+  m_ZoomOut->setVisible(false);
 
-  m_ToolBar->addSeparator();
+  //m_ToolBar->addSeparator();
 
   m_OpenHelpMode = m_ToolBar->addAction("Open Help Perspective", this, SLOT(OpenHelpPerspective()));
   m_CloseHelpMode = m_ToolBar->addAction("Close Help Perspective", this, SLOT(CloseHelpPerspective()));
   IPerspectiveDescriptor::Pointer currPersp = this->GetSite()->GetPage()->GetPerspective();
-  m_OpenHelpMode->setVisible(!(currPersp.IsNotNull() && currPersp->GetId() == HelpPerspective::ID));
-  m_CloseHelpMode->setVisible((currPersp.IsNotNull() && currPersp->GetId() == HelpPerspective::ID));
+  m_OpenHelpMode->setVisible(false);
+  m_CloseHelpMode->setVisible(false);
 
   connect(m_WebEngineView, SIGNAL(backwardAvailable(bool)), m_BackAction, SLOT(setEnabled(bool)));
   connect(m_WebEngineView, SIGNAL(forwardAvailable(bool)), m_ForwardAction, SLOT(setEnabled(bool)));
@@ -251,7 +253,7 @@ void HelpEditor::PerspectiveActivated(const SmartPointer<IWorkbenchPage>& /*page
   if (perspective->GetId() == HelpPerspective::ID)
   {
     m_OpenHelpMode->setVisible(false);
-    m_CloseHelpMode->setVisible(true);
+    m_CloseHelpMode->setVisible(false);
   }
 }
 
@@ -260,7 +262,7 @@ void HelpEditor::PerspectiveDeactivated(const SmartPointer<IWorkbenchPage>& /*pa
 {
   if (perspective->GetId() == HelpPerspective::ID)
   {
-    m_OpenHelpMode->setVisible(true);
+    m_OpenHelpMode->setVisible(false);
     m_CloseHelpMode->setVisible(false);
   }
 }
@@ -308,8 +310,8 @@ void HelpEditor::enableShortcuts()
   m_BackAction->setShortcut(QKeySequence::Back);
   m_ForwardAction->setShortcut(QKeySequence::Forward);
   m_FindAction->setShortcut(QKeySequence::Find);
-  m_ZoomIn->setShortcut(QKeySequence::ZoomIn);
-  m_ZoomOut->setShortcut(QKeySequence::ZoomOut);
+  //m_ZoomIn->setShortcut(QKeySequence::ZoomIn);
+  //m_ZoomOut->setShortcut(QKeySequence::ZoomOut);
 }
 
 void HelpEditor::disableShortcuts()
@@ -317,8 +319,8 @@ void HelpEditor::disableShortcuts()
   m_BackAction->setShortcut(QKeySequence());
   m_ForwardAction->setShortcut(QKeySequence());
   m_FindAction->setShortcut(QKeySequence());
-  m_ZoomIn->setShortcut(QKeySequence());
-  m_ZoomOut->setShortcut(QKeySequence());
+  //m_ZoomIn->setShortcut(QKeySequence());
+  //m_ZoomOut->setShortcut(QKeySequence());
 }
 
 }
