@@ -132,11 +132,7 @@ void QmitkDataStorageListModel::SetPredicate(mitk::NodePredicateBase *pred)
 {
   m_NodePredicate = pred;
 
-  // in a prior implementation the call to beginResetModel() been after reset().
-  // Should this actually be the better order of calls, please document!
-  QAbstractListModel::beginResetModel();
   reset();
-  QAbstractListModel::endResetModel();
 }
 
 mitk::NodePredicateBase *QmitkDataStorageListModel::GetPredicate() const
@@ -146,6 +142,7 @@ mitk::NodePredicateBase *QmitkDataStorageListModel::GetPredicate() const
 
 void QmitkDataStorageListModel::reset()
 {
+  QAbstractListModel::beginResetModel();
   mitk::DataStorage::SetOfObjects::ConstPointer modelNodes;
 
   if (m_DataStorage != nullptr)
@@ -170,12 +167,18 @@ void QmitkDataStorageListModel::reset()
       AddNodeToInternalList(node);
     }
   }
+  QAbstractListModel::endResetModel();
 }
 
 void QmitkDataStorageListModel::AddNodeToInternalList(mitk::DataNode *node)
 {
   if (m_DataStorage != nullptr)
   {
+    if ( InternalListContains(node) )
+    {
+      return;
+    }
+
     itk::MemberCommand<QmitkDataStorageListModel>::Pointer nodeModifiedCommand;
     // add modified observer
     nodeModifiedCommand = itk::MemberCommand<QmitkDataStorageListModel>::New();
@@ -331,4 +334,16 @@ QModelIndex QmitkDataStorageListModel::getIndex(const mitk::DataNode *node) cons
     }
   }
   return QModelIndex();
+}
+
+bool QmitkDataStorageListModel::InternalListContains(mitk::DataNode* node)
+{
+  for (auto iter = m_NodesAndObserverTags.begin(); iter != m_NodesAndObserverTags.end(); ++iter)
+  {
+    if (std::get<NODE>(*iter) == node)
+    {
+      return true;
+    }
+  }
+  return false;
 }

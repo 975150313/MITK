@@ -126,6 +126,9 @@ protected:
   //! Internal helper: remove given node
   void RemoveNodeFromInternalList(mitk::DataNode *node);
 
+  //! \return 'true' if internal list of nodes contains specified node.
+  bool InternalListContains(mitk::DataNode* node);
+
   //! Internal helper: Clear complete model list
   void ClearInternalNodeList();
 
