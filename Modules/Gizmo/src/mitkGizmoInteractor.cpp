@@ -139,24 +139,29 @@ void mitk::GizmoInteractor::DecideInteraction(StateMachineAction *, InteractionE
 
   m_InitialManipulatedObjectGeometry = m_ManipulatedObjectGeometry->Clone();
 
+  mitk::VnlVector vnlAxisOfMovement;
   switch ( m_PickedHandle ) {
   case Gizmo::MoveAlongAxisX:
   case Gizmo::RotateAroundAxisX:
   case Gizmo::ScaleX:
-      m_AxisOfMovement = m_InitialManipulatedObjectGeometry->GetAxisVector(0);
-      break;
+    vnlAxisOfMovement = m_InitialManipulatedObjectGeometry->GetMatrixColumn(0);
+    break;
   case Gizmo::MoveAlongAxisY:
   case Gizmo::RotateAroundAxisY:
   case Gizmo::ScaleY:
-      m_AxisOfMovement = m_InitialManipulatedObjectGeometry->GetAxisVector(1);
-      break;
+    vnlAxisOfMovement = m_InitialManipulatedObjectGeometry->GetMatrixColumn(1);
+    break;
   case Gizmo::MoveAlongAxisZ:
   case Gizmo::RotateAroundAxisZ:
   case Gizmo::ScaleZ:
-      m_AxisOfMovement = m_InitialManipulatedObjectGeometry->GetAxisVector(2);
-      break;
+    vnlAxisOfMovement = m_InitialManipulatedObjectGeometry->GetMatrixColumn(2);
+    break;
   default:
       break;
+  }
+  for ( int d = 0; d < 3; ++d )
+  {
+    m_AxisOfMovement[d] = vnlAxisOfMovement[d];
   }
   m_AxisOfMovement.Normalize();
   m_AxisOfRotation = m_AxisOfMovement;
