@@ -994,12 +994,35 @@ void QmitkDataStorageTreeModel::Update()
     this->beginResetModel();
     this->endResetModel();
 
-    mitk::DataStorage::SetOfObjects::ConstPointer _NodeSet = m_DataStorage->GetAll();
-
-    for (mitk::DataStorage::SetOfObjects::const_iterator it = _NodeSet->begin(); it != _NodeSet->end(); it++)
+    mitk::DataStorage::SetOfObjects::ConstPointer constNodeSet = m_DataStorage->GetAll();
+    std::vector<const mitk::DataNode*> layerSortedNodes;
+    for ( auto& node : *constNodeSet )
     {
-      // save node
-      this->AddNodeInternal(*it);
+      layerSortedNodes.push_back(node);
+    }
+
+    // sort nodes by "layer" property as we impose later in AdjustLayerProperty
+    // (sort descending)
+    struct {
+      bool operator()(const mitk::DataNode* a, const mitk::DataNode* b) const
+      {
+        int layerA, layerB;
+        if ( a != nullptr && b != nullptr &&
+             a->GetIntProperty("layer", layerA) &&
+             b->GetIntProperty("layer", layerB) )
+        {
+          return layerA > layerB;
+        }
+        // fallback: compare pointers
+        return a > b;
+      }
+    } sortByLayer;
+
+    std::sort(layerSortedNodes.begin(), layerSortedNodes.end(), sortByLayer);
+
+    for ( auto& node : layerSortedNodes )
+    {
+      this->AddNodeInternal(node);
     }
   }
 }
