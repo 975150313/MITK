@@ -483,7 +483,7 @@ void mitk::Gizmo::OnFollowedGeometryModified()
   auto vnlAxisX = m_FollowedGeometry->GetMatrixColumn(0);
   auto vnlAxisY = m_FollowedGeometry->GetMatrixColumn(1);
   auto vnlAxisZ = m_FollowedGeometry->GetMatrixColumn(2);
-  for ( int d = 0; d < 2; ++d )
+  for ( int d = 0; d < 3; ++d )
   {
     m_AxisX[d] = vnlAxisX[d];
     m_AxisY[d] = vnlAxisY[d];
