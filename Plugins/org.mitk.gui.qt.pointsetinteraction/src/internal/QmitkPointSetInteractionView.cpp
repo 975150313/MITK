@@ -84,7 +84,7 @@ void QmitkPointSetInteractionView::OnAddPointSetClicked()
   pointSetNode->SetData( pointSet );
   pointSetNode->SetProperty( "name", mitk::StringProperty::New( name.toStdString() ) );
   pointSetNode->SetProperty( "opacity", mitk::FloatProperty::New( 1 ) );
-  pointSetNode->SetColor( 1.0, 1.0, 0.0 );
+  pointSetNode->SetColor( 1.0, 0.0, 0.0 );
   //
   // add the node to the ds
   //
