@@ -159,7 +159,7 @@ void mitk::GizmoInteractor::DecideInteraction(StateMachineAction *, InteractionE
   default:
       break;
   }
-  for ( int d = 0; d < 3; ++d )
+  for ( unsigned int d = 0; d < std::min(3u, vnlAxisOfMovement.size()); ++d )
   {
     m_AxisOfMovement[d] = vnlAxisOfMovement[d];
   }
