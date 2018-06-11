@@ -398,6 +398,8 @@ void mitk::PointSetVtkMapper3D::VertexRendering()
   if (pointSizeProp.IsNotNull())
     m_PointSize = pointSizeProp->GetValue();
 
+  vtkSmartPointer<vtkLinearTransform> vtktransform = this->GetDataNode()->GetVtkTransform(this->GetTimestep());
+
   double *color = m_UnselectedActor->GetProperty()->GetColor();
   double opacity = m_UnselectedActor->GetProperty()->GetOpacity();
 
@@ -411,10 +413,12 @@ void mitk::PointSetVtkMapper3D::VertexRendering()
 
   glColor4d(color[0], color[1], color[2], opacity);
 
+  double* transformedPoint = nullptr;
   for (auto pointsIter = itkPointSet->GetPoints()->Begin(); pointsIter != itkPointSet->GetPoints()->End(); pointsIter++)
   {
     const itk::Point<mitk::ScalarType> &point = pointsIter->Value();
-    glVertex3d(point[0], point[1], point[2]);
+    transformedPoint = vtktransform->TransformPoint(point[0], point[1], point[2]);
+    glVertex3d(transformedPoint[0], transformedPoint[1], transformedPoint[2]);
   }
 
   glEnd();
