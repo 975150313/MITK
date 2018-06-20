@@ -32,7 +32,7 @@ namespace mitk
     // Deactivated, not required m_ObjReader.reset(new ObjFileReaderService());
 
     // Deactivated, not required m_PlyReader.reset(new PlyFileReaderService());
-    // Deactivated, not required m_ObjWriter.reset(new PlyFileWriterService());
+    m_ObjWriter.reset(new PlyFileWriterService());
   }
 
   void IOExtActivator::Unload(us::ModuleContext *) {}
