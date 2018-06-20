@@ -29,10 +29,10 @@ namespace mitk
     m_SceneReader.reset(new SceneFileReader());
 
     m_VtkUnstructuredGridReader.reset(new VtkUnstructuredGridReader());
-    m_ObjReader.reset(new ObjFileReaderService());
+    // Deactivated, not required m_ObjReader.reset(new ObjFileReaderService());
 
-    m_PlyReader.reset(new PlyFileReaderService());
-    m_ObjWriter.reset(new PlyFileWriterService());
+    // Deactivated, not required m_PlyReader.reset(new PlyFileReaderService());
+    // Deactivated, not required m_ObjWriter.reset(new PlyFileWriterService());
   }
 
   void IOExtActivator::Unload(us::ModuleContext *) {}

@@ -421,7 +421,7 @@ void MitkCoreActivator::RegisterItkReaderWriter()
 void MitkCoreActivator::RegisterVtkReaderWriter()
 {
   m_FileIOs.push_back(new mitk::SurfaceVtkXmlIO());
-  m_FileIOs.push_back(new mitk::SurfaceStlIO());
+  // Deactivated, not required m_FileIOs.push_back(new mitk::SurfaceStlIO());
   m_FileIOs.push_back(new mitk::SurfaceVtkLegacyIO());
 
   m_FileIOs.push_back(new mitk::ImageVtkXmlIO());
