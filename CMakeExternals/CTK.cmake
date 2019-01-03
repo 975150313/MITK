@@ -10,7 +10,12 @@ if(MITK_USE_CTK)
   endif()
 
   set(proj CTK)
-  set(proj_DEPENDENCIES DCMTK)
+  if (MITK_USE_DCMTK)
+    set(proj_DEPENDENCIES DCMTK)
+  else()
+    set(proj_DEPENDENCIES)
+  endif()
+
   set(CTK_DEPENDS ${proj})
 
   if(NOT DEFINED CTK_DIR)
@@ -35,6 +40,18 @@ if(MITK_USE_CTK)
            -DCTK_APP_ctkSimplePythonShell:BOOL=OFF
       )
     endif()
+
+    if(MITK_USE_DCMTK)
+      list(APPEND ctk_optional_cache_args
+        -DDCMTK_DIR:PATH=${DCMTK_DIR}
+        -DCTK_LIB_DICOM/Widgets:BOOL=ON
+      )
+    else()
+      list(APPEND ctk_optional_cache_args
+        -DCTK_LIB_DICOM/Widgets:BOOL=OFF
+      )
+    endif()
+
 
     if(NOT MITK_USE_Python)
       list(APPEND ctk_optional_cache_args
@@ -76,12 +93,11 @@ if(MITK_USE_CTK)
         -DCTK_LIB_CommandLineModules/Backend/LocalProcess:BOOL=ON
         -DCTK_LIB_CommandLineModules/Frontend/QtGui:BOOL=ON
         -DCTK_LIB_PluginFramework:BOOL=ON
-        -DCTK_LIB_DICOM/Widgets:BOOL=ON
+        -DCTK_LIB_Widgets:BOOL=ON
         -DCTK_LIB_XNAT/Core:BOOL=ON
         -DCTK_PLUGIN_org.commontk.eventadmin:BOOL=ON
         -DCTK_PLUGIN_org.commontk.configadmin:BOOL=ON
         -DCTK_USE_GIT_PROTOCOL:BOOL=OFF
-        -DDCMTK_DIR:PATH=${DCMTK_DIR}
         -DqRestAPI_URL:STRING=${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/qRestAPI_c5e4c2a7_patched.tar.gz
         -DPythonQt_URL:STRING=${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/PythonQt_e39be131.tar.gz # From https://github.com/kislinsk/PythonQt.git
       CMAKE_CACHE_ARGS

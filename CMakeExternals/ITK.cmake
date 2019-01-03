@@ -8,7 +8,9 @@ if(DEFINED ITK_DIR AND NOT EXISTS ${ITK_DIR})
 endif()
 
 set(proj ITK)
-set(proj_DEPENDENCIES GDCM)
+if (MITK_USE_GDCM)
+  list(APPEND proj_DEPENDENCIES GDCM)
+endif()
 
 if(MITK_USE_OpenCV)
   list(APPEND proj_DEPENDENCIES OpenCV)
@@ -23,6 +25,20 @@ set(ITK_DEPENDS ${proj})
 if(NOT DEFINED ITK_DIR)
 
   set(additional_cmake_args -DUSE_WRAP_ITK:BOOL=OFF)
+
+  if (MITK_USE_GDCM)
+    list(APPEND additional_cmake_args
+         -DITK_USE_SYSTEM_GDCM:BOOL=ON
+         -DGDCM_DIR:PATH=${GDCM_DIR}
+        )
+  endif()
+
+  if(MITK_USE_HDF5)
+    list(APPEND additional_cmake_args
+         -DITK_USE_SYSTEM_HDF5:BOOL=ON
+         -DHDF5_DIR:PATH=${HDF5_DIR}
+        )
+  endif()
 
   if(MITK_USE_OpenCV)
     list(APPEND additional_cmake_args
@@ -54,10 +70,6 @@ if(NOT DEFINED ITK_DIR)
        ${ep_common_args}
        ${additional_cmake_args}
        -DBUILD_EXAMPLES:BOOL=OFF
-       -DITK_USE_SYSTEM_GDCM:BOOL=ON
-       -DGDCM_DIR:PATH=${GDCM_DIR}
-       -DITK_USE_SYSTEM_HDF5:BOOL=ON
-       -DHDF5_DIR:PATH=${HDF5_DIR}
      CMAKE_CACHE_ARGS
        ${ep_common_cache_args}
      CMAKE_CACHE_DEFAULT_ARGS
