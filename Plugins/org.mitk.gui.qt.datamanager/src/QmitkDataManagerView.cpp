@@ -1035,6 +1035,11 @@ void QmitkDataManagerView::ReinitSelectedNodes( bool )
 
   auto boundingGeometry = dataStorage->ComputeBoundingGeometry3D(nodes, "visible");
 
+  if (nullptr != boundingGeometry)
+  {
+    mitk::RenderingManager::GetInstance()->InitializeViews(boundingGeometry, mitk::RenderingManager::REQUEST_UPDATE_ALL);
+  }
+
 }
 
 void QmitkDataManagerView::RemoveSelectedNodes( bool )
