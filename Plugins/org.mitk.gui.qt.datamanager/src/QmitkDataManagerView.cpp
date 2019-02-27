@@ -232,7 +232,7 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
   auto planarSubdivisionPolygonNodeDescriptor =
     QmitkNodeDescriptorManager::GetInstance()->GetDescriptor("PlanarSubdivisionPolygon");
 
-  QAction* globalReinitAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/global_reinit_24x24.png"), tr("Align display to all objects"), this);
+  QAction* globalReinitAction = new QAction(QIcon(":/org.mitk.gui.qt.datamanager/global_reinit_24x24.png"), tr("Align display to visible objects"), this);
   QObject::connect( globalReinitAction, SIGNAL( triggered(bool) )
     , this, SLOT( GlobalReinit(bool) ) );
   unknownDataNodeDescriptor->AddAction(globalReinitAction);
