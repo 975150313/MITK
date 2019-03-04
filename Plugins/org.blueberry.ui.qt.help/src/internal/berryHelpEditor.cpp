@@ -30,8 +30,12 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <berryIWorkbenchPage.h>
 #include <berryIWorkbenchPartConstants.h>
 
-#include <QToolBar>
+#include <QDesktopServices>
+#include <QDir>
 #include <QHelpEngine>
+#include <QMessageBox>
+#include <QTemporaryFile>
+#include <QToolBar>
 #include <QVBoxLayout>
 
 namespace berry {
@@ -129,6 +133,36 @@ void HelpEditor::CreateQtPartControl(QWidget* parent)
 
   connect(&HelpPluginActivator::getInstance()->getQHelpEngine(), SIGNAL(homePageChanged(QString)),
           this, SLOT(HomePageChanged(QString)));
+
+  m_ToolBar->addAction(QIcon(":/org.blueberry.ui.qt.help/print.png"), "Print to PDF", [this]() {
+    auto page = m_WebEngineView->page();
+    if (page == nullptr) {
+      return;
+    }
+
+    auto dirname = QDir::tempPath();
+    auto filename = dirname + "/" + page->url().fileName().replace(QRegExp("[^a-zA-z0-9-.]"), "_").remove(".html").append(".pdf");
+    page->printToPdf([filename](const QByteArray& data){
+      if (data.isEmpty()) {
+        QMessageBox::warning(nullptr, tr("Printing help page..."), tr("Something went wrong when generating this help page as a PDF. Sorry!"));
+        return;
+      }
+      // Ask the user where he/she wants to save the file
+      QFile file(filename);
+      if (file.open(QIODevice::WriteOnly)) {
+        // Write contents of ba in file
+        file.write(data);
+        // Close the file
+        file.close();
+        QDesktopServices::openUrl(filename);
+      }
+      else {
+        QMessageBox::warning(nullptr, tr("Printing help page..."), tr("Could not write your help page to '%1'. Sorry!").arg(filename));
+        return;
+      }
+    });
+  });
+
 }
 
 void HelpEditor::DoSetInput(IEditorInput::Pointer input)
