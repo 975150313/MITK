@@ -477,8 +477,8 @@ void mitk::ImageVtkMapper2D::ApplyColor(mitk::BaseRenderer *renderer)
   bool hover = false;
   bool selected = false;
   bool binary = false;
-  GetDataNode()->GetBoolProperty("binaryimage.ishovering", hover, renderer);
-  GetDataNode()->GetBoolProperty("selected", selected, renderer);
+  // DMA deactivated: GetDataNode()->GetBoolProperty("binaryimage.ishovering", hover, renderer);
+  // DMA deactivated: GetDataNode()->GetBoolProperty("selected", selected, renderer);
   GetDataNode()->GetBoolProperty("binary", binary, renderer);
   if (binary && hover && !selected)
   {
