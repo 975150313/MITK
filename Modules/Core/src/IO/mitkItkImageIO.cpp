@@ -221,7 +221,7 @@ namespace mitk
 
     const std::string path = this->GetLocalFileName();
 
-    MITK_INFO << "loading " << path << " via itk::ImageIOFactory... " << std::endl;
+    MITK_DEBUG << "loading " << path << " via itk::ImageIOFactory... " << std::endl;
 
     // Check to see if we can read the file given the name or prefix
     if (path.empty())
@@ -282,7 +282,7 @@ namespace mitk
     ioRegion.SetSize(ioSize);
     ioRegion.SetIndex(ioStart);
 
-    MITK_INFO << "ioRegion: " << ioRegion << std::endl;
+    MITK_DEBUG << "ioRegion: " << ioRegion << std::endl;
     m_ImageIO->SetIORegion(ioRegion);
     void *buffer = new unsigned char[m_ImageIO->GetImageSizeInBytes()];
     m_ImageIO->Read(buffer);
@@ -310,8 +310,8 @@ namespace mitk
     slicedGeometry->InitializeEvenlySpaced(planeGeometry, image->GetDimension(2));
     slicedGeometry->SetSpacing(spacing);
 
-    MITK_INFO << slicedGeometry->GetCornerPoint(false, false, false);
-    MITK_INFO << slicedGeometry->GetCornerPoint(true, true, true);
+    MITK_DEBUG << slicedGeometry->GetCornerPoint(false, false, false);
+    MITK_DEBUG << slicedGeometry->GetCornerPoint(true, true, true);
 
     // re-initialize TimeGeometry
     TimeGeometry::Pointer timeGeometry;
@@ -333,7 +333,7 @@ namespace mitk
 
       if (timeGeometryTypeData->GetMetaDataObjectValue() == ArbitraryTimeGeometry::GetStaticNameOfClass())
       {
-        MITK_INFO << "used time geometry: " << ArbitraryTimeGeometry::GetStaticNameOfClass() << std::endl;
+        MITK_DEBUG << "used time geometry: " << ArbitraryTimeGeometry::GetStaticNameOfClass() << std::endl;
         typedef std::vector<TimePointType> TimePointVector;
         TimePointVector timePoints;
 
@@ -370,7 +370,7 @@ namespace mitk
 
     if (timeGeometry.IsNull())
     { // Fallback. If no other valid time geometry has been created, create a ProportionalTimeGeometry
-      MITK_INFO << "used time geometry: " << ProportionalTimeGeometry::GetStaticNameOfClass() << std::endl;
+      MITK_DEBUG << "used time geometry: " << ProportionalTimeGeometry::GetStaticNameOfClass() << std::endl;
       ProportionalTimeGeometry::Pointer propTimeGeometry = ProportionalTimeGeometry::New();
       propTimeGeometry->Initialize(slicedGeometry, image->GetDimension(3));
       timeGeometry = propTimeGeometry;
@@ -379,7 +379,7 @@ namespace mitk
     image->SetTimeGeometry(timeGeometry);
 
     buffer = NULL;
-    MITK_INFO << "number of image components: " << image->GetPixelType().GetNumberOfComponents() << std::endl;
+    MITK_DEBUG << "number of image components: " << image->GetPixelType().GetNumberOfComponents() << std::endl;
 
     for (itk::MetaDataDictionary::ConstIterator iter = dictionary.Begin(), iterEnd = dictionary.End(); iter != iterEnd;
          ++iter)
@@ -454,7 +454,7 @@ namespace mitk
       }
     }
 
-    MITK_INFO << "...finished!" << std::endl;
+    MITK_DEBUG << "...finished!" << std::endl;
 
     result.push_back(image.GetPointer());
     return result;
@@ -500,7 +500,7 @@ namespace mitk
     LocalFile localFile(this);
     const std::string path = localFile.GetFileName();
 
-    MITK_INFO << "Writing image: " << path << std::endl;
+    MITK_DEBUG << "Writing image: " << path << std::endl;
 
     try
     {

@@ -44,7 +44,7 @@ void mitk::ItkImageFileReader::GenerateData()
   const unsigned int MINDIM = 2;
   const unsigned int MAXDIM = 4;
 
-  MITK_INFO("mitkItkImageFileReader") << "loading " << m_FileName << " via itk::ImageIOFactory... " << std::endl;
+  MITK_DEBUG("mitkItkImageFileReader") << "loading " << m_FileName << " via itk::ImageIOFactory... " << std::endl;
 
   // Check to see if we can read the file given the name or prefix
   if (m_FileName == "")
@@ -115,7 +115,7 @@ void mitk::ItkImageFileReader::GenerateData()
   ioRegion.SetSize(ioSize);
   ioRegion.SetIndex(ioStart);
 
-  MITK_INFO("mitkItkImageFileReader") << "ioRegion: " << ioRegion << std::endl;
+  MITK_DEBUG("mitkItkImageFileReader") << "ioRegion: " << ioRegion << std::endl;
   imageIO->SetIORegion(ioRegion);
   void *buffer = new unsigned char[imageIO->GetImageSizeInBytes()];
   imageIO->Read(buffer);
@@ -141,8 +141,8 @@ void mitk::ItkImageFileReader::GenerateData()
   slicedGeometry->InitializeEvenlySpaced(planeGeometry, image->GetDimension(2));
   slicedGeometry->SetSpacing(spacing);
 
-  MITK_INFO("mitkItkImageFileReader") << slicedGeometry->GetCornerPoint(false, false, false);
-  MITK_INFO("mitkItkImageFileReader") << slicedGeometry->GetCornerPoint(true, true, true);
+  MITK_DEBUG("mitkItkImageFileReader") << slicedGeometry->GetCornerPoint(false, false, false);
+  MITK_DEBUG("mitkItkImageFileReader") << slicedGeometry->GetCornerPoint(true, true, true);
 
   // re-initialize TimeGeometry
   ProportionalTimeGeometry::Pointer timeGeometry = ProportionalTimeGeometry::New();
@@ -150,7 +150,7 @@ void mitk::ItkImageFileReader::GenerateData()
   image->SetTimeGeometry(timeGeometry);
 
   buffer = nullptr;
-  MITK_INFO("mitkItkImageFileReader") << "number of image components: " << image->GetPixelType().GetNumberOfComponents()
+  MITK_DEBUG("mitkItkImageFileReader") << "number of image components: " << image->GetPixelType().GetNumberOfComponents()
                                       << std::endl;
   //  mitk::DataNode::Pointer node = this->GetOutput();
   //  node->SetData( image );
@@ -160,7 +160,7 @@ void mitk::ItkImageFileReader::GenerateData()
   //{
   //  SetDefaultImageProperties( node );
   //}
-  MITK_INFO("mitkItkImageFileReader") << "...finished!" << std::endl;
+  MITK_DEBUG("mitkItkImageFileReader") << "...finished!" << std::endl;
 }
 
 bool mitk::ItkImageFileReader::CanReadFile(const std::string filename,
@@ -203,7 +203,7 @@ bool mitk::ItkImageFileReader::CanReadFile(const std::string filename,
   }
   catch (...)
   {
-    MITK_INFO("mitkItkImageFileReader") << "Could not read ImageInformation ";
+    MITK_DEBUG("mitkItkImageFileReader") << "Could not read ImageInformation ";
   }
 
   return true;
