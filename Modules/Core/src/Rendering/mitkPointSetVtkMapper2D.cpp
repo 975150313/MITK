@@ -632,14 +632,14 @@ void mitk::PointSetVtkMapper2D::GenerateDataForRenderer(mitk::BaseRenderer *rend
   // apply color and opacity
   if (m_ShowPoints)
   {
-    float unselectedColor[4];
-    double selectedColor[4] = {1.0f, 0.0f, 0.0f, 1.0f}; // red
-
     ls->m_UnselectedActor->VisibilityOn();
     ls->m_SelectedActor->VisibilityOn();
 
     // check if there is a color property
+    float unselectedColor[4];
     GetDataNode()->GetColor(unselectedColor);
+
+    double selectedColor[4] = {unselectedColor[0], unselectedColor[1], unselectedColor[2], 1.0f}; // red
 
     // get selected color property
     if (dynamic_cast<mitk::ColorProperty *>(
